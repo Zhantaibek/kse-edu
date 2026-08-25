@@ -1,0 +1,269 @@
+@import "tailwindcss";
+
+@custom-variant dark (&:where(.dark, .dark *));
+
+@theme {
+  --font-sans: "Plus Jakarta Sans", ui-sans-serif, system-ui, sans-serif;
+  --font-display: "Plus Jakarta Sans", ui-sans-serif, system-ui, sans-serif;
+
+  --color-brand-50: #eef9fa;
+  --color-brand-100: #d5f1f4;
+  --color-brand-200: #aee3e9;
+  --color-brand-300: #7dd0d9;
+  --color-brand-400: #51adba;
+  --color-brand-500: #3f9bab;
+  --color-brand-600: #348191;
+  --color-brand-700: #2d6875;
+  --color-brand-800: #295560;
+  --color-brand-900: #264851;
+
+  --color-kse-gray: #8b949a;
+  --color-kse-muted: #555f69;
+  --color-kse-surface: #f5f6f7;
+  --color-kse-border: #e1e5e8;
+  --color-surface: #f3f6f7;
+  --color-ink: #1e2c32;
+  --color-panel: #ffffff;
+  --color-panel-dark: #152428;
+  --color-border-dark: #2f444a;
+}
+
+html,
+body,
+#root {
+  min-height: 100%;
+}
+
+body {
+  margin: 0;
+  font-family: var(--font-sans);
+  background: var(--color-surface);
+  color: var(--color-ink);
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+}
+
+/* Студент на курсах: нельзя выделять текст */
+html.student-course-protect,
+html.student-course-protect body,
+html.student-course-protect body * {
+  -webkit-user-select: none !important;
+  user-select: none !important;
+}
+
+html.student-course-protect input,
+html.student-course-protect textarea {
+  -webkit-user-select: text !important;
+  user-select: text !important;
+}
+
+.dark body,
+body:where(.dark *) {
+  background: #0f1a1d;
+  color: #e8f2f4;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #c5d5d8;
+  border-radius: 999px;
+}
+
+.dark ::-webkit-scrollbar-thumb {
+  background: #3d555b;
+}
+
+/* Ambient app canvas */
+.app-canvas {
+  background:
+    radial-gradient(ellipse 80% 50% at 10% -10%, rgb(81 173 186 / 0.14), transparent 55%),
+    radial-gradient(ellipse 60% 40% at 100% 0%, rgb(52 129 145 / 0.08), transparent 50%),
+    var(--color-surface);
+}
+
+.dark .app-canvas {
+  background:
+    radial-gradient(ellipse 70% 45% at 0% -5%, rgb(81 173 186 / 0.12), transparent 50%),
+    radial-gradient(ellipse 50% 40% at 100% 0%, rgb(45 104 117 / 0.2), transparent 45%),
+    #0f1a1d;
+}
+
+/* Auth atmosphere */
+.auth-canvas {
+  background:
+    radial-gradient(ellipse 90% 70% at 15% 10%, rgb(81 173 186 / 0.35), transparent 50%),
+    radial-gradient(ellipse 70% 55% at 90% 0%, rgb(125 208 217 / 0.28), transparent 45%),
+    radial-gradient(ellipse 50% 40% at 70% 100%, rgb(52 129 145 / 0.12), transparent 50%),
+    linear-gradient(165deg, #eef9fa 0%, #f5f7f8 42%, #e8f0f2 100%);
+}
+
+.dark .auth-canvas {
+  background:
+    radial-gradient(ellipse 80% 60% at 20% 0%, rgb(81 173 186 / 0.22), transparent 50%),
+    radial-gradient(ellipse 60% 50% at 100% 20%, rgb(45 104 117 / 0.35), transparent 45%),
+    linear-gradient(165deg, #0f1a1d 0%, #152428 50%, #1a2a2e 100%);
+}
+
+.auth-canvas::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background-image: url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%2351adba' fill-opacity='0.04'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E");
+  pointer-events: none;
+}
+
+@keyframes fade-up {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes soft-pulse {
+  0%,
+  100% {
+    opacity: 0.55;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 0.85;
+    transform: scale(1.04);
+  }
+}
+
+.animate-fade-up {
+  animation: fade-up 0.45s ease-out both;
+}
+
+.animate-fade-up-delay {
+  animation: fade-up 0.55s ease-out 0.08s both;
+}
+
+.auth-orb {
+  animation: soft-pulse 8s ease-in-out infinite;
+}
+
+.glass-panel {
+  background: rgb(255 255 255 / 0.82);
+  backdrop-filter: blur(18px);
+  border: 1px solid rgb(225 229 232 / 0.9);
+  box-shadow:
+    0 1px 2px rgb(81 173 186 / 0.06),
+    0 24px 48px -24px rgb(30 44 50 / 0.18);
+}
+
+.dark .glass-panel {
+  background: rgb(21 36 40 / 0.88);
+  border-color: rgb(47 68 74 / 0.9);
+  box-shadow: 0 24px 48px -24px rgb(0 0 0 / 0.45);
+}
+
+.nav-active-rail {
+  box-shadow: inset 3px 0 0 0 var(--color-brand-400);
+}
+
+.lesson-player-range {
+  -webkit-appearance: none;
+  appearance: none;
+  height: 6px;
+  border-radius: 999px;
+  background: linear-gradient(
+    to right,
+    #51adba 0%,
+    #51adba var(--progress, 0%),
+    rgb(255 255 255 / 0.22) var(--progress, 0%),
+    rgb(255 255 255 / 0.22) 100%
+  );
+  outline: none;
+  cursor: pointer;
+}
+
+.lesson-player-range::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 14px;
+  height: 14px;
+  border-radius: 999px;
+  background: #fff;
+  border: 2px solid #51adba;
+  box-shadow: 0 0 0 4px rgb(81 173 186 / 0.25);
+  cursor: pointer;
+}
+
+.lesson-player-range::-moz-range-thumb {
+  width: 14px;
+  height: 14px;
+  border-radius: 999px;
+  background: #fff;
+  border: 2px solid #51adba;
+  cursor: pointer;
+}
+
+body.checkout-open {
+  overflow: hidden;
+}
+
+body.checkout-open #root {
+  filter: blur(14px) saturate(0.55) brightness(0.62);
+  transform: scale(0.985);
+  pointer-events: none;
+  user-select: none;
+  transition:
+    filter 0.35s ease,
+    transform 0.4s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+#root {
+  transition:
+    filter 0.35s ease,
+    transform 0.4s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+@keyframes checkout-progress {
+  from {
+    width: 8%;
+  }
+  to {
+    width: 92%;
+  }
+}
+
+.checkout-progress {
+  width: 8%;
+  animation: checkout-progress 2.6s ease-in-out forwards;
+}
+
+.checkout-card {
+  transform: translateZ(0);
+  transition: transform 0.35s ease, box-shadow 0.35s ease;
+}
+
+.checkout-card:hover {
+  transform: translateY(-2px) rotateX(2deg);
+  box-shadow: 0 20px 40px -16px rgba(45, 104, 117, 0.55);
+}
+
+.landing-hero-copy {
+  animation: fade-up 0.7s ease-out both;
+}
+
+.landing-section {
+  animation: fade-up 0.55s ease-out both;
+}
+
+.landing-feature {
+  animation: fade-up 0.5s ease-out both;
+}
+

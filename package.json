@@ -1,0 +1,26 @@
+{
+  "name": "kse-edu",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Учебный центр КФБ — Educational CRM (курсы, студенты, преподаватели)",
+  "scripts": {
+    "dev": "concurrently -n edu-api,edu-web -c green,yellow \"npm run dev --prefix backend\" \"npm run dev --prefix frontend\"",
+    "dev:backend": "npm run dev --prefix backend",
+    "dev:frontend": "npm run dev --prefix frontend",
+    "build": "npm run build --prefix backend && npm run build --prefix frontend",
+    "build:backend": "npm run build --prefix backend",
+    "build:frontend": "npm run build --prefix frontend",
+    "db:up": "docker compose -f ../kse-kg/docker-compose.yml up -d postgres",
+    "db:ensure": "node scripts/ensure-edu-db.mjs",
+    "db:down": "echo \"Shared Postgres: stop from kse-kg with npm run db:down\"",
+    "db:migrate": "npm run prisma:migrate --prefix backend",
+    "db:push": "npm run prisma:push --prefix backend",
+    "db:seed": "npm run prisma:seed --prefix backend",
+    "db:setup": "npm run db:up && npm run db:ensure && npm run db:push && npm run db:seed",
+    "docker:up": "npm run db:up",
+    "docker:full": "docker compose up --build"
+  },
+  "devDependencies": {
+    "concurrently": "^10.0.5"
+  }
+}

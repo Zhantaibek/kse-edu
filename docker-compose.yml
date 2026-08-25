@@ -1,0 +1,35 @@
+# Учебный центр использует общий Postgres КФБ (kse-postgres :5433, БД education_crm).
+# Поднимите БД из соседнего kse-kg: npm run db:up (или здесь: npm run db:setup)
+
+services:
+  api:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: kse-edu-api
+    restart: unless-stopped
+    environment:
+      NODE_ENV: production
+      PORT: 4100
+      # host.docker.internal — Postgres КФБ на хосте (порт 5433)
+      DATABASE_URL: postgresql://kse:kse@host.docker.internal:5433/education_crm?schema=public
+      JWT_SECRET: ${JWT_SECRET:-kse-edu-dev-secret-change-in-production}
+      JWT_EXPIRES_IN: 7d
+      CORS_ORIGIN: ${CORS_ORIGIN:-http://localhost:5173,http://127.0.0.1:5173}
+    ports:
+      - "4100:4100"
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+
+  web:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+      args:
+        VITE_API_URL: http://localhost:4100/api
+    container_name: kse-edu-web
+    restart: unless-stopped
+    ports:
+      - "5173:80"
+    depends_on:
+      - api
