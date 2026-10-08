@@ -1,4 +1,5 @@
 import type { User } from '../types';
+import { EDU_API_URL, EDU_BASE_PATH } from '../config';
 
 export type EmbedMode = 'standalone' | 'embedded';
 
@@ -19,8 +20,8 @@ export interface EmbedConfig {
 }
 
 const defaultConfig: EmbedConfig = {
-  basePath: '/education/app',
-  apiBaseUrl: import.meta.env.VITE_API_URL || 'http://localhost:4100/api',
+  basePath: EDU_BASE_PATH,
+  apiBaseUrl: EDU_API_URL,
   mode: 'standalone',
   hideLogout: false,
 };

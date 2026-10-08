@@ -107,7 +107,107 @@ export const courseService = {
       status: input.status ?? 'DRAFT',
       teacher: { connect: { id: teacherId } },
       category: { connect: { id: input.categoryId } },
+      modules: {
+        create: {
+          title: 'Видео',
+          order: 1,
+        },
+      },
     });
+  },
+
+  async ensureDefaultModule(courseId: string) {
+    const course = await courseRepository.findById(courseId);
+    if (!course) throw new NotFoundError('Course');
+    const existing = course.modules[0];
+    if (existing) return existing;
+
+    return lessonRepository.createModule({
+      title: 'Видео',
+      order: 1,
+      course: { connect: { id: courseId } },
+    });
+  },
+
+  async addVideo(
+    courseId: string,
+    input: {
+      title: string;
+      description?: string;
+      videoUrl?: string;
+      videoUrls?: string[];
+      imageUrls?: string[];
+      order?: number;
+    },
+    actor: AuthUser,
+  ) {
+    const course = await courseRepository.findById(courseId);
+    if (!course) throw new NotFoundError('Course');
+    if (actor.role === 'TEACHER' && course.teacherId !== actor.id) {
+      throw new ForbiddenError();
+    }
+
+    const module = await this.ensureDefaultModule(courseId);
+    const videoCount = course.modules.reduce((n, m) => n + m.lessons.length, 0);
+    const imageUrls = input.imageUrls?.filter(Boolean) ?? [];
+    const videoUrls = [
+      ...(input.videoUrls ?? []),
+      ...(input.videoUrl ? [input.videoUrl] : []),
+    ].filter((url, i, arr) => url && arr.indexOf(url) === i);
+
+    return lessonRepository.create({
+      title: input.title,
+      contentType: videoUrls.length ? 'VIDEO' : 'IMAGE',
+      content: input.description ?? null,
+      videoUrl: videoUrls[0] ?? null,
+      fileUrl: imageUrls[0] ?? null,
+      linkUrl: null,
+      videoUrls,
+      imageUrls,
+      durationMin: 0,
+      order: input.order ?? videoCount + 1,
+      module: { connect: { id: module.id } },
+    });
+  },
+
+  async updateVideo(
+    id: string,
+    input: {
+      title?: string;
+      description?: string;
+      videoUrl?: string | null;
+      videoUrls?: string[];
+      imageUrls?: string[];
+      order?: number;
+    },
+    actor: AuthUser,
+  ) {
+    const lesson = await lessonRepository.findById(id);
+    if (!lesson) throw new NotFoundError('Lesson');
+    if (actor.role === 'TEACHER' && lesson.module.course.teacherId !== actor.id) {
+      throw new ForbiddenError();
+    }
+
+    const data: Record<string, unknown> = {};
+    if (input.title !== undefined) data.title = input.title;
+    if (input.description !== undefined) data.content = input.description;
+    if (input.videoUrl !== undefined) data.videoUrl = input.videoUrl;
+    if (input.videoUrls !== undefined) {
+      data.videoUrls = input.videoUrls;
+      data.videoUrl = input.videoUrls[0] ?? null;
+    }
+    if (input.order !== undefined) data.order = input.order;
+    if (input.imageUrls !== undefined) {
+      data.imageUrls = input.imageUrls;
+      data.fileUrl = input.imageUrls[0] ?? null;
+    }
+    const nextVideos =
+      input.videoUrls ??
+      (input.videoUrl !== undefined ? [input.videoUrl].filter(Boolean) : lesson.videoUrls?.length ? lesson.videoUrls : [lesson.videoUrl].filter(Boolean));
+    const nextImages = input.imageUrls ?? lesson.imageUrls;
+    data.contentType = nextVideos.length ? 'VIDEO' : nextImages.length ? 'IMAGE' : lesson.contentType;
+
+    return lessonRepository.update(id, data);
   },
 
   async update(id: string, input: Record<string, unknown>, actor: AuthUser) {
@@ -193,6 +293,8 @@ export const courseService = {
       videoUrl?: string | null;
       fileUrl?: string | null;
       linkUrl?: string | null;
+      videoUrls?: string[];
+      imageUrls?: string[];
       durationMin?: number;
       order?: number;
     },
@@ -214,6 +316,8 @@ export const courseService = {
       videoUrl: input.videoUrl,
       fileUrl: input.fileUrl,
       linkUrl: input.linkUrl,
+      videoUrls: input.videoUrls ?? [],
+      imageUrls: input.imageUrls ?? [],
       durationMin: input.durationMin ?? 0,
       order: input.order ?? module.lessons.length + 1,
       module: { connect: { id: input.moduleId } },

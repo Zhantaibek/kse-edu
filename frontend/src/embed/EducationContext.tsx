@@ -1,5 +1,6 @@
 import { createContext, useContext } from 'react';
 import type { EmbedConfig } from './runtime';
+import { EDU_API_URL } from '../config';
 
 export interface EducationContextValue extends EmbedConfig {
   /** Convenience: eduPath bound to current basePath */
@@ -24,7 +25,7 @@ export function useEducation() {
     // Standalone fallback — keeps pages working outside EducationApp
     return {
       basePath: '',
-      apiBaseUrl: import.meta.env.VITE_API_URL || 'http://localhost:4000/api',
+      apiBaseUrl: EDU_API_URL,
       mode: 'standalone' as const,
       hideLogout: false,
       path: (suffix: string) => {

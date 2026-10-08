@@ -1,9 +1,6 @@
 import type { Request, Response } from 'express';
 import { authService } from '../services/auth.service.js';
-import { telegramService } from '../services/telegram.service.js';
-import { handleTelegramUpdate } from '../services/telegram-bot.js';
 import { asyncHandler } from '../utils/asyncHandler.js';
-import { ForbiddenError } from '../utils/errors.js';
 import { sendSuccess } from '../utils/response.js';
 
 export const authController = {
@@ -17,13 +14,18 @@ export const authController = {
     return sendSuccess(res, result);
   }),
 
-  verifyTelegram: asyncHandler(async (req: Request, res: Response) => {
-    const result = await authService.verifyTelegram(req.body.challengeId, req.body.code);
+  requestMagicLink: asyncHandler(async (req: Request, res: Response) => {
+    const result = await authService.requestMagicLink(req.body.email);
     return sendSuccess(res, result);
   }),
 
-  continueTelegramLink: asyncHandler(async (req: Request, res: Response) => {
-    const result = await authService.continueAfterTelegramLink(req.body.linkToken);
+  verifyMagicLink: asyncHandler(async (req: Request, res: Response) => {
+    const result = await authService.verifyMagicLink(req.body.token);
+    return sendSuccess(res, result);
+  }),
+
+  verifyEmailOtp: asyncHandler(async (req: Request, res: Response) => {
+    const result = await authService.verifyEmailOtp(req.body.email, req.body.code);
     return sendSuccess(res, result);
   }),
 
@@ -36,36 +38,12 @@ export const authController = {
     return sendSuccess(res, user);
   }),
 
-  telegramStatus: asyncHandler(async (req: Request, res: Response) => {
-    const status = await authService.telegramStatus(req.user!.id);
-    return sendSuccess(res, status);
-  }),
-
-  createTelegramLink: asyncHandler(async (req: Request, res: Response) => {
-    const link = await authService.createTelegramLink(req.user!.id);
-    return sendSuccess(res, link);
-  }),
-
-  unlinkTelegram: asyncHandler(async (req: Request, res: Response) => {
-    const result = await authService.unlinkTelegram(req.user!.id);
+  changePassword: asyncHandler(async (req: Request, res: Response) => {
+    const result = await authService.changePassword(
+      req.user!.id,
+      req.body.currentPassword,
+      req.body.newPassword,
+    );
     return sendSuccess(res, result);
-  }),
-
-  setTelegram2fa: asyncHandler(async (req: Request, res: Response) => {
-    const result = await authService.setTelegram2fa(req.user!.id, req.body.enabled);
-    return sendSuccess(res, result);
-  }),
-};
-
-export const telegramWebhookController = {
-  webhook: asyncHandler(async (req: Request, res: Response) => {
-    const secret = req.header('x-telegram-bot-api-secret-token') ?? undefined;
-    if (!telegramService.verifyWebhookSecret(secret)) {
-      throw new ForbiddenError('Invalid webhook secret');
-    }
-
-    const update = req.body as import('../services/telegram.service.js').TelegramUpdate;
-    await handleTelegramUpdate(update);
-    return res.json({ ok: true });
   }),
 };

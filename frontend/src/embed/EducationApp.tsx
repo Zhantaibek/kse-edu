@@ -7,6 +7,7 @@ import { EducationProvider } from './EducationContext';
 import { EducationRoutes } from './EducationRoutes';
 import { configureEmbed, eduPath, type EmbedMode } from './runtime';
 import '../index.css';
+import { EDU_API_URL } from '../config';
 
 export interface EducationAppProps {
   /** Host mount path, default `/education` */
@@ -63,7 +64,7 @@ export function EducationApp({
   useEffect(() => {
     configureEmbed({
       basePath,
-      apiBaseUrl: apiBaseUrl || import.meta.env.VITE_API_URL || 'http://localhost:4000/api',
+      apiBaseUrl: apiBaseUrl || EDU_API_URL,
       mode,
       hideLogout,
       getAccessToken: getAccessToken ?? (() => useAuthStore.getState().token),
@@ -85,7 +86,7 @@ export function EducationApp({
   const ctx = useMemo(
     () => ({
       basePath: basePath.replace(/\/+$/, '') === '/' ? '' : basePath.replace(/\/+$/, ''),
-      apiBaseUrl: apiBaseUrl || import.meta.env.VITE_API_URL || 'http://localhost:4000/api',
+      apiBaseUrl: apiBaseUrl || EDU_API_URL,
       mode,
       hideLogout,
       getAccessToken,

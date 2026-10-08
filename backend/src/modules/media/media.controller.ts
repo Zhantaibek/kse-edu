@@ -13,11 +13,26 @@ export const uploadsDir = path.resolve(__dirname, '../../../uploads');
 
 mkdirSync(uploadsDir, { recursive: true });
 
+const IMAGE_EXT = new Set(['.jpg', '.jpeg', '.png', '.webp', '.gif', '.bmp']);
+const VIDEO_EXT = new Set(['.mp4', '.webm', '.mov', '.m4v']);
+
+function isAllowedFile(file: Express.Multer.File) {
+  const ext = path.extname(file.originalname || '').toLowerCase();
+  if (file.mimetype.startsWith('image/') && ext !== '.heic' && ext !== '.heif') return true;
+  if (file.mimetype.startsWith('video/')) return true;
+  if (IMAGE_EXT.has(ext) || VIDEO_EXT.has(ext)) return true;
+  return ALLOWED.has(file.mimetype);
+}
+
 const ALLOWED = new Set([
   'image/jpeg',
+  'image/jpg',
+  'image/pjpeg',
   'image/png',
+  'image/x-png',
   'image/webp',
   'image/gif',
+  'image/bmp',
   'video/mp4',
   'video/webm',
   'video/quicktime',
@@ -35,8 +50,13 @@ export const upload = multer({
   storage,
   limits: { fileSize: 80 * 1024 * 1024 },
   fileFilter: (_req, file, cb) => {
-    if (!ALLOWED.has(file.mimetype)) {
-      cb(new Error('Разрешены только изображения (jpg/png/webp/gif) и видео (mp4/webm/mov)'));
+    const ext = path.extname(file.originalname || '').toLowerCase();
+    if (ext === '.heic' || ext === '.heif' || file.mimetype === 'image/heic' || file.mimetype === 'image/heif') {
+      cb(new Error('HEIC не поддерживается. Сохраните фото как JPG или PNG'));
+      return;
+    }
+    if (!isAllowedFile(file)) {
+      cb(new Error('Разрешены изображения (jpg, png, webp, gif) и видео (mp4, webm, mov)'));
       return;
     }
     cb(null, true);

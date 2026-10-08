@@ -1,4 +1,5 @@
 import { cn } from '../../utils';
+import { EDU_ASSETS, EDU_BASE_PATH } from '../../config';
 
 interface BrandLogoProps {
   collapsed?: boolean;
@@ -7,11 +8,11 @@ interface BrandLogoProps {
 }
 
 export function BrandLogo({ collapsed = false, className, variant = 'light' }: BrandLogoProps) {
-  const base = import.meta.env.BASE_URL;
+  const base = EDU_ASSETS;
 
   if (collapsed) {
     return (
-      <a href="/education" className={cn('flex items-center overflow-hidden', className)}>
+      <a href={`${EDU_BASE_PATH}/`} className={cn('flex items-center overflow-hidden', className)}>
         <img src={`${base}kse-mark.png`} alt="КФБ" className="h-10 w-10 object-contain" />
       </a>
     );
@@ -20,10 +21,10 @@ export function BrandLogo({ collapsed = false, className, variant = 'light' }: B
   // На тёмном фоне полный логотип (светлый фон в PNG) смотрится плохо — mark + текст
   if (variant === 'dark') {
     return (
-      <a href="/education" className={cn('flex items-center gap-3 overflow-hidden', className)}>
+      <a href={`${EDU_BASE_PATH}/`} className={cn('flex items-center gap-3 overflow-hidden', className)}>
         <img src={`${base}kse-mark.png`} alt="КФБ" className="h-10 w-10 object-contain" />
         <div className="min-w-0">
-          <div className="font-display text-[15px] font-extrabold leading-tight tracking-tight text-white">
+          <div className="font-display text-[15px] font-semibold leading-tight tracking-[-0.04em] text-white">
             Учебный центр <span className="text-brand-200">КФБ</span>
           </div>
           <div className="text-[11px] font-medium text-white/70">Кыргызская фондовая биржа</div>
@@ -33,7 +34,7 @@ export function BrandLogo({ collapsed = false, className, variant = 'light' }: B
   }
 
   return (
-    <a href="/education" className={cn('flex min-w-0 items-center overflow-hidden', className)}>
+      <a href={`${EDU_BASE_PATH}/`} className={cn('flex min-w-0 items-center overflow-hidden', className)}>
       <img
         src={`${base}kse-logo.png`}
         alt="Кыргызская фондовая биржа"

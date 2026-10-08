@@ -20,17 +20,19 @@ import type { NotificationItem } from '../../types';
 import { Avatar } from '../ui/Card';
 import { fullName, formatDate } from '../../utils';
 import { cn } from '../../utils';
+import { useEducation } from '../../embed/EducationContext';
 
 const roleLabel: Record<string, string> = {
   ADMIN: 'Администратор',
   TEACHER: 'Преподаватель',
-  STUDENT: 'Студент',
+  STUDENT: 'Ученик',
 };
 
 export function Header() {
   const navigate = useNavigate();
   const user = useAuthStore((s) => s.user);
   const logout = useAuthStore((s) => s.logout);
+  const { onLogout: hostLogout } = useEducation();
   const { toggleSidebar, setMobileSidebar, sidebarCollapsed, theme, toggleTheme } = useUiStore();
   const [notifOpen, setNotifOpen] = useState(false);
   const [profileOpen, setProfileOpen] = useState(false);
@@ -44,15 +46,16 @@ export function Header() {
   const handle = user?.email ? `@${user.email.split('@')[0]}` : '';
   const role = roleLabel[user?.role ?? ''] ?? user?.role ?? '';
 
-  const loadNotifications = async () => {
-    try {
-      const { data } = await api.get('/notifications');
-      setNotifications(data.data.items);
-      setUnread(data.data.unreadCount);
-    } catch {
-      /* ignore */
-    }
-  };
+  const loadNotifications = () =>
+    api
+      .get('/notifications')
+      .then(({ data }) => {
+        setNotifications(data.data.items);
+        setUnread(data.data.unreadCount);
+      })
+      .catch(() => {
+        /* ignore */
+      });
 
   useEffect(() => {
     void loadNotifications();
@@ -89,6 +92,11 @@ export function Header() {
 
   const onLogout = () => {
     setProfileOpen(false);
+    // Внутри сайта сессия общая — выход делает сайт.
+    if (hostLogout) {
+      hostLogout();
+      return;
+    }
     logout();
     toast.success('Вы вышли из системы');
     navigate('/login');
@@ -98,7 +106,8 @@ export function Header() {
     'rounded-xl p-2 text-kse-muted transition hover:bg-kse-surface hover:text-ink dark:hover:bg-border-dark dark:hover:text-white';
 
   return (
-    <header className="sticky top-0 z-20 flex h-16 items-center gap-3 border-b border-kse-border/80 bg-panel/80 px-4 backdrop-blur-xl dark:bg-panel-dark/80 dark:border-border-dark sm:px-6">
+    <header className="sticky top-3 z-20 px-3 pb-2">
+      <div className="kse-chrome mx-auto flex h-16 items-center gap-3 px-4 sm:px-5">
       <button type="button" className={`${iconBtn} lg:hidden`} onClick={() => setMobileSidebar(true)}>
         <Menu size={18} />
       </button>
@@ -111,7 +120,7 @@ export function Header() {
         <input
           value={search}
           onChange={(e) => setSearch(e.target.value)}
-          placeholder="Поиск курсов…"
+          placeholder={user?.role === 'STUDENT' ? 'Найти курс…' : 'Поиск курсов…'}
           className="h-10 w-full rounded-xl border border-kse-border bg-kse-surface/80 pl-9 pr-3 text-sm outline-none transition focus:border-brand-400 focus:bg-white focus:ring-2 focus:ring-brand-400/20 dark:bg-panel-dark dark:border-border-dark dark:focus:bg-panel-dark"
         />
       </form>
@@ -234,6 +243,7 @@ export function Header() {
             </div>
           )}
         </div>
+      </div>
       </div>
     </header>
   );

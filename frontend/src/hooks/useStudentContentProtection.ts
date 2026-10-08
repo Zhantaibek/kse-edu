@@ -36,7 +36,7 @@ export function useStudentContentProtection(enabled: boolean) {
 
     const mediaDevices = navigator.mediaDevices;
     const originalGetDisplayMedia = mediaDevices?.getDisplayMedia?.bind(mediaDevices);
-    if (mediaDevices && originalGetDisplayMedia) {
+    if (mediaDevices && originalGetDisplayMedia !== undefined) {
       mediaDevices.getDisplayMedia = () =>
         Promise.reject(
           new DOMException('Запись экрана на страницах курсов отключена', 'NotAllowedError'),

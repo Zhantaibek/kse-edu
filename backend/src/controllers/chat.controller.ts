@@ -20,23 +20,23 @@ export const chatController = {
   }),
 
   get: asyncHandler(async (req: Request, res: Response) => {
-    const conversation = await chatService.get(req.params.id, req.user!);
+    const conversation = await chatService.get(String(req.params.id), req.user!);
     return sendSuccess(res, conversation);
   }),
 
   listMessages: asyncHandler(async (req: Request, res: Response) => {
     const after = typeof req.query.after === 'string' ? req.query.after : undefined;
-    const messages = await chatService.listMessages(req.params.id, req.user!, after);
+    const messages = await chatService.listMessages(String(req.params.id), req.user!, after);
     return sendSuccess(res, messages);
   }),
 
   send: asyncHandler(async (req: Request, res: Response) => {
-    const message = await chatService.send(req.params.id, req.user!, req.body.body);
+    const message = await chatService.send(String(req.params.id), req.user!, req.body.body);
     return sendSuccess(res, message, 201);
   }),
 
   markRead: asyncHandler(async (req: Request, res: Response) => {
-    const result = await chatService.markRead(req.params.id, req.user!);
+    const result = await chatService.markRead(String(req.params.id), req.user!);
     return sendSuccess(res, result);
   }),
 };

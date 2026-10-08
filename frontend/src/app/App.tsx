@@ -23,7 +23,12 @@ export default function App() {
   return (
     <>
       <AppRouter />
-      <Toaster position="top-right" toastOptions={{ className: 'text-sm' }} />
+      <Toaster
+        position="top-right"
+        toastOptions={{
+          className: 'text-sm !rounded-[14px] !border !border-[var(--card-border)] !shadow-[var(--shadow)]',
+        }}
+      />
     </>
   );
 }

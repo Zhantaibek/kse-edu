@@ -5,10 +5,11 @@ import {
   GraduationCap,
   BookOpen,
   FolderTree,
-  ClipboardList,
   CreditCard,
-  BarChart3,
+  ClipboardCheck,
   MessageCircle,
+  UserRound,
+  House,
   X,
 } from 'lucide-react';
 import { BrandLogo } from '../common/BrandLogo';
@@ -18,15 +19,15 @@ import { useEducation } from '../../embed/EducationContext';
 import { cn } from '../../utils';
 
 const allItems = [
-  { path: 'dashboard', label: 'Обзор', icon: LayoutDashboard, roles: ['ADMIN', 'TEACHER', 'STUDENT'] },
-  { path: 'messages', label: 'Сообщения', icon: MessageCircle, roles: ['ADMIN', 'TEACHER', 'STUDENT'] },
+  { path: 'dashboard', label: 'Обзор', studentLabel: 'Главная', icon: LayoutDashboard, studentIcon: House, roles: ['ADMIN', 'TEACHER', 'STUDENT'] },
   { path: 'students', label: 'Студенты', icon: Users, roles: ['ADMIN', 'TEACHER'] },
   { path: 'teachers', label: 'Преподаватели', icon: GraduationCap, roles: ['ADMIN'] },
-  { path: 'courses', label: 'Курсы', icon: BookOpen, roles: ['ADMIN', 'TEACHER', 'STUDENT'] },
+  { path: 'courses', label: 'Курсы', studentLabel: 'Мои курсы', icon: BookOpen, roles: ['ADMIN', 'TEACHER', 'STUDENT'] },
   { path: 'categories', label: 'Категории', icon: FolderTree, roles: ['ADMIN'] },
-  { path: 'assignments', label: 'Задания', icon: ClipboardList, roles: ['ADMIN', 'TEACHER', 'STUDENT'] },
+  { path: 'assignments', label: 'Задания', icon: ClipboardCheck, roles: ['ADMIN', 'TEACHER', 'STUDENT'] },
+  { path: 'messages', label: 'Сообщения', icon: MessageCircle, roles: ['ADMIN', 'TEACHER', 'STUDENT'] },
   { path: 'payments', label: 'Оплаты', icon: CreditCard, roles: ['ADMIN', 'STUDENT'] },
-  { path: 'analytics', label: 'Аналитика', icon: BarChart3, roles: ['ADMIN', 'TEACHER'] },
+  { path: 'settings', label: 'Профиль', icon: UserRound, roles: ['STUDENT'] },
 ];
 
 export function Sidebar() {
@@ -34,16 +35,13 @@ export function Sidebar() {
   const { sidebarCollapsed, mobileSidebarOpen, setMobileSidebar } = useUiStore();
   const { path } = useEducation();
   const role = user?.role ?? 'STUDENT';
-  const items = allItems
-    .filter((i) => i.roles.includes(role))
-    .map((i) =>
-      role === 'STUDENT' && i.path === 'courses' ? { ...i, label: 'Мои курсы' } : i,
-    );
+  const isStudent = role === 'STUDENT';
+  const items = allItems.filter((i) => i.roles.includes(role));
 
   const content = (
     <aside
       className={cn(
-        'flex h-full flex-col border-r border-kse-border bg-panel/95 backdrop-blur-xl dark:bg-panel-dark/95 dark:border-border-dark',
+        'flex h-full flex-col border-r border-[var(--card-border)] bg-panel/80 backdrop-blur-xl dark:bg-panel-dark/85 dark:border-border-dark',
         sidebarCollapsed ? 'w-[76px]' : 'w-64',
       )}
     >
@@ -61,6 +59,8 @@ export function Sidebar() {
       <nav className="flex-1 space-y-0.5 overflow-y-auto px-2.5 py-3">
         {items.map((item) => {
           const to = path(item.path);
+          const Icon = isStudent && item.studentIcon ? item.studentIcon : item.icon;
+          const label = isStudent && item.studentLabel ? item.studentLabel : item.label;
           return (
             <NavLink
               key={item.path}
@@ -79,14 +79,14 @@ export function Sidebar() {
             >
               {({ isActive }) => (
                 <>
-                  <item.icon
+                  <Icon
                     size={18}
                     className={cn(
                       'shrink-0 transition',
                       isActive ? 'text-brand-500' : 'text-kse-gray group-hover:text-brand-500',
                     )}
                   />
-                  {!sidebarCollapsed && <span>{item.label}</span>}
+                  {!sidebarCollapsed && <span>{label}</span>}
                 </>
               )}
             </NavLink>
@@ -98,9 +98,11 @@ export function Sidebar() {
         <div className="border-t border-kse-border p-3 dark:border-border-dark">
           <div className="rounded-xl bg-gradient-to-br from-brand-50 to-brand-100/60 px-3 py-2.5 dark:from-brand-900/40 dark:to-brand-800/20">
             <div className="text-[11px] font-semibold uppercase tracking-wider text-brand-600 dark:text-brand-300">
-              KSE EduCRM
+              {isStudent ? 'Кабинет ученика' : 'Учебный центр КФБ'}
             </div>
-            <div className="mt-0.5 text-xs text-kse-muted dark:text-kse-gray">Обучение · биржа · рост</div>
+            <div className="mt-0.5 text-xs text-kse-muted dark:text-kse-gray">
+              {isStudent ? 'Курсы · задания · прогресс' : 'Курсы · биржа · квалификация'}
+            </div>
           </div>
         </div>
       )}

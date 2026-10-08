@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useForm } from 'react-hook-form';
 import { z } from 'zod';
-import { zodResolver } from '@hookform/resolvers/zod';
+import { zodResolver } from '../../utils/zodResolver';
 import toast from 'react-hot-toast';
 import api from '../../services/api';
 import type { User } from '../../types';
@@ -30,17 +30,12 @@ export function TeachersPage() {
     resolver: zodResolver(createSchema),
   });
 
-  const load = async () => {
-    setLoading(true);
-    try {
-      const { data } = await api.get('/teachers', {
-        params: { search: search || undefined, limit: 50 },
-      });
-      setItems(data.data);
-    } finally {
-      setLoading(false);
-    }
-  };
+  // Состояние меняем только когда пришёл ответ: при поиске список остаётся на экране.
+  const load = () =>
+    api
+      .get('/teachers', { params: { search: search || undefined, limit: 50 } })
+      .then(({ data }) => setItems(data.data))
+      .finally(() => setLoading(false));
 
   useEffect(() => {
     void load();

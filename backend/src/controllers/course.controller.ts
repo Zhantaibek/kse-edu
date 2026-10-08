@@ -13,7 +13,7 @@ export const courseController = {
   }),
 
   get: asyncHandler(async (req: Request, res: Response) => {
-    const course = await courseService.getById(req.params.id, req.user);
+    const course = await courseService.getById(String(req.params.id), req.user);
     return sendSuccess(res, course);
   }),
 
@@ -23,23 +23,23 @@ export const courseController = {
   }),
 
   update: asyncHandler(async (req: Request, res: Response) => {
-    const course = await courseService.update(req.params.id, req.body, req.user!);
+    const course = await courseService.update(String(req.params.id), req.body, req.user!);
     return sendSuccess(res, course);
   }),
 
   remove: asyncHandler(async (req: Request, res: Response) => {
-    const result = await courseService.remove(req.params.id, req.user!);
+    const result = await courseService.remove(String(req.params.id), req.user!);
     return sendSuccess(res, result);
   }),
 
   listLessons: asyncHandler(async (req: Request, res: Response) => {
-    const lessons = await courseService.listLessons(req.params.courseId, req.user);
+    const lessons = await courseService.listLessons(String(req.params.courseId), req.user);
     return sendSuccess(res, lessons);
   }),
 
   addModule: asyncHandler(async (req: Request, res: Response) => {
     const module = await courseService.addModule(
-      req.params.courseId,
+      String(req.params.courseId),
       req.body.title,
       req.body.order,
       req.user!,
@@ -48,37 +48,47 @@ export const courseController = {
   }),
 
   updateModule: asyncHandler(async (req: Request, res: Response) => {
-    const module = await courseService.updateModule(req.params.id, req.body, req.user!);
+    const module = await courseService.updateModule(String(req.params.id), req.body, req.user!);
     return sendSuccess(res, module);
   }),
 
   deleteModule: asyncHandler(async (req: Request, res: Response) => {
-    const result = await courseService.deleteModule(req.params.id, req.user!);
+    const result = await courseService.deleteModule(String(req.params.id), req.user!);
     return sendSuccess(res, result);
   }),
 
+  addVideo: asyncHandler(async (req: Request, res: Response) => {
+    const video = await courseService.addVideo(String(req.params.courseId), req.body, req.user!);
+    return sendSuccess(res, video, 201);
+  }),
+
+  updateVideo: asyncHandler(async (req: Request, res: Response) => {
+    const video = await courseService.updateVideo(String(req.params.id), req.body, req.user!);
+    return sendSuccess(res, video);
+  }),
+
   addLesson: asyncHandler(async (req: Request, res: Response) => {
-    const lesson = await courseService.addLesson(req.params.courseId, req.body, req.user!);
+    const lesson = await courseService.addLesson(String(req.params.courseId), req.body, req.user!);
     return sendSuccess(res, lesson, 201);
   }),
 
   updateLesson: asyncHandler(async (req: Request, res: Response) => {
-    const lesson = await courseService.updateLesson(req.params.id, req.body, req.user!);
+    const lesson = await courseService.updateLesson(String(req.params.id), req.body, req.user!);
     return sendSuccess(res, lesson);
   }),
 
   deleteLesson: asyncHandler(async (req: Request, res: Response) => {
-    const result = await courseService.deleteLesson(req.params.id, req.user!);
+    const result = await courseService.deleteLesson(String(req.params.id), req.user!);
     return sendSuccess(res, result);
   }),
 
   listReviews: asyncHandler(async (req: Request, res: Response) => {
-    const data = await reviewService.list(req.params.courseId, req.user);
+    const data = await reviewService.list(String(req.params.courseId), req.user);
     return sendSuccess(res, data);
   }),
 
   createReview: asyncHandler(async (req: Request, res: Response) => {
-    const review = await reviewService.create(req.params.courseId, req.user!, req.body);
+    const review = await reviewService.create(String(req.params.courseId), req.user!, req.body);
     return sendSuccess(res, review, 201);
   }),
 };
@@ -95,12 +105,12 @@ export const categoryController = {
   }),
 
   update: asyncHandler(async (req: Request, res: Response) => {
-    const category = await categoryService.update(req.params.id, req.body);
+    const category = await categoryService.update(String(req.params.id), req.body);
     return sendSuccess(res, category);
   }),
 
   remove: asyncHandler(async (req: Request, res: Response) => {
-    const result = await categoryService.remove(req.params.id);
+    const result = await categoryService.remove(String(req.params.id));
     return sendSuccess(res, result);
   }),
 };
@@ -119,14 +129,14 @@ export const enrollmentController = {
   completeLesson: asyncHandler(async (req: Request, res: Response) => {
     const progress = await enrollmentService.completeLesson(
       req.user!.id,
-      req.params.courseId,
+      String(req.params.courseId),
       req.body.lessonId,
     );
     return sendSuccess(res, progress);
   }),
 
   getProgress: asyncHandler(async (req: Request, res: Response) => {
-    const progress = await enrollmentService.getProgress(req.user!.id, req.params.courseId);
+    const progress = await enrollmentService.getProgress(req.user!.id, String(req.params.courseId));
     return sendSuccess(res, progress);
   }),
 };

@@ -50,6 +50,8 @@ export interface Lesson {
   videoUrl?: string | null;
   fileUrl?: string | null;
   linkUrl?: string | null;
+  videoUrls?: string[];
+  imageUrls?: string[];
   durationMin: number;
   order: number;
   moduleId: string;

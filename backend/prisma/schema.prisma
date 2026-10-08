@@ -93,6 +93,7 @@ model User {
   assignments          Assignment[]           @relation("AssignmentCreator")
   telegramOtpChallenges TelegramOtpChallenge[]
   telegramLinkTokens   TelegramLinkToken[]
+  magicLinkTokens      MagicLinkToken[]
   courseReviews        CourseReview[]
   studentConversations Conversation[] @relation("StudentConversations")
   teacherConversations Conversation[] @relation("TeacherConversations")
@@ -120,6 +121,21 @@ model TelegramLinkToken {
   expiresAt DateTime
   usedAt    DateTime?
   createdAt DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([expiresAt])
+}
+
+model MagicLinkToken {
+  id        String    @id @default(cuid())
+  userId    String
+  tokenHash String    @unique
+  codeHash  String?
+  expiresAt DateTime
+  usedAt    DateTime?
+  createdAt DateTime  @default(now())
 
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
@@ -201,6 +217,8 @@ model Lesson {
   videoUrl    String?
   fileUrl     String?
   linkUrl     String?
+  videoUrls   String[]          @default([])
+  imageUrls   String[]          @default([])
   durationMin Int               @default(0)
   order       Int
   createdAt   DateTime          @default(now())

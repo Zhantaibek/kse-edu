@@ -13,7 +13,7 @@ export function courseCoverStyle(course: Course) {
   }
   return {
     backgroundImage:
-      'linear-gradient(135deg, rgba(81,173,186,.95) 0%, rgba(52,129,145,.9) 45%, rgba(45,104,117,.95) 100%)',
+      'linear-gradient(135deg, rgba(78,172,185,.95) 0%, rgba(26,109,122,.9) 45%, rgba(14,51,57,.95) 100%)',
   };
 }
 
@@ -22,19 +22,21 @@ export function CourseCard({
   badge,
   progressPercent,
   hidePrice,
+  cta,
 }: {
   course: Course;
   badge?: { label: string; tone?: 'teal' | 'green' | 'amber' | 'rose' | 'slate' };
   /** Если задан — курс куплен: прогресс под обложкой, без цены */
   progressPercent?: number;
   hidePrice?: boolean;
+  cta?: string;
 }) {
   const owned = hidePrice || progressPercent !== undefined;
   const progress = Math.max(0, Math.min(100, Number(progressPercent ?? 0)));
 
   return (
     <Link to={`/courses/${course.id}`} className="group">
-      <Card className="overflow-hidden transition duration-300 group-hover:-translate-y-1 group-hover:shadow-[0_12px_32px_-12px_rgba(81,173,186,0.35)]">
+      <Card className="overflow-hidden transition duration-300 group-hover:-translate-y-1 group-hover:shadow-[var(--glow)]">
         <div className="relative h-44 bg-cover bg-center" style={courseCoverStyle(course)}>
           <div className="absolute inset-x-0 bottom-0 flex flex-wrap items-end justify-between gap-2 p-3">
             <div className="flex flex-wrap gap-1.5">
@@ -74,6 +76,11 @@ export function CourseCard({
               <Clock3 size={13} /> {course.durationHours} ч
             </span>
           </div>
+          {cta && (
+            <div className="mt-4 text-sm font-semibold text-brand-700 group-hover:text-brand-800">
+              {cta} →
+            </div>
+          )}
         </div>
       </Card>
     </Link>

@@ -10,7 +10,7 @@ export const studentController = {
   }),
 
   get: asyncHandler(async (req: Request, res: Response) => {
-    const user = await userService.getById(req.params.id, req.user!);
+    const user = await userService.getById(String(req.params.id), req.user!);
     return sendSuccess(res, user);
   }),
 
@@ -20,17 +20,17 @@ export const studentController = {
   }),
 
   update: asyncHandler(async (req: Request, res: Response) => {
-    const user = await userService.update(req.params.id, req.body, req.user!);
+    const user = await userService.update(String(req.params.id), req.body, req.user!);
     return sendSuccess(res, user);
   }),
 
   remove: asyncHandler(async (req: Request, res: Response) => {
-    const result = await userService.remove(req.params.id);
+    const result = await userService.remove(String(req.params.id));
     return sendSuccess(res, result);
   }),
 
   block: asyncHandler(async (req: Request, res: Response) => {
-    const user = await userService.block(req.params.id);
+    const user = await userService.block(String(req.params.id));
     return sendSuccess(res, user);
   }),
 };
@@ -42,7 +42,7 @@ export const teacherController = {
   }),
 
   get: asyncHandler(async (req: Request, res: Response) => {
-    const user = await userService.getById(req.params.id, req.user!);
+    const user = await userService.getById(String(req.params.id), req.user!);
     return sendSuccess(res, user);
   }),
 

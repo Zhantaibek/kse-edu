@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useForm } from 'react-hook-form';
 import { z } from 'zod';
-import { zodResolver } from '@hookform/resolvers/zod';
+import { zodResolver } from '../../utils/zodResolver';
 import toast from 'react-hot-toast';
 import api from '../../services/api';
 import type { Category, Course } from '../../types';
@@ -19,8 +19,6 @@ const schema = z.object({
   description: z.string().min(10),
   categoryId: z.string().min(1),
   price: z.coerce.number().nonnegative(),
-  level: z.enum(['BEGINNER', 'INTERMEDIATE', 'ADVANCED']),
-  durationHours: z.coerce.number().nonnegative(),
   coverUrl: z.string().url().optional().or(z.literal('')),
   status: z.enum(['DRAFT', 'PUBLISHED', 'ARCHIVED']),
 });
@@ -47,51 +45,58 @@ export function CoursesPage() {
 
   const form = useForm<FormValues>({
     resolver: zodResolver(schema),
-    defaultValues: { level: 'BEGINNER', status: 'DRAFT', durationHours: 10, price: 0 },
+    defaultValues: { status: 'DRAFT', price: 0 },
   });
 
-  const load = async () => {
-    setLoading(true);
-    try {
-      if (isStudent) {
-        const [enrollRes, catsRes] = await Promise.all([
-          api.get('/enrollments/mine'),
-          api.get('/categories'),
-        ]);
-        const enrolled = (enrollRes.data.data ?? [])
-          .map((e: { course: Course; progressPercent?: number }) =>
-            e.course
-              ? { ...e.course, progressPercent: Number(e.progressPercent ?? 0) }
-              : null,
-          )
-          .filter(Boolean) as Array<Course & { progressPercent: number }>;
-        setMyCourses(enrolled);
-        setCategories(catsRes.data.data);
-        setItems([]);
-        setMeta({ page: 1, totalPages: 1, total: enrolled.length });
-      } else {
-        const [coursesRes, catsRes] = await Promise.all([
-          api.get('/courses', {
-            params: {
-              search: search || undefined,
-              status: status || undefined,
-              categoryId: categoryId || undefined,
-              teacherId: teacherId || undefined,
-              page,
-              limit: 9,
-            },
-          }),
-          api.get('/categories'),
-        ]);
-        setItems(coursesRes.data.data);
-        setMeta(coursesRes.data.meta);
-        setCategories(catsRes.data.data);
-        setMyCourses([]);
-      }
-    } finally {
-      setLoading(false);
-    }
+  type PageData = {
+    items: Course[];
+    myCourses: Array<Course & { progressPercent: number }>;
+    categories: Category[];
+    meta: { page: number; totalPages: number; total: number };
   };
+
+  /** Только запрос — без изменения состояния, чтобы обновлять его в одном месте, когда пришёл ответ. */
+  const fetchPage = async (): Promise<PageData> => {
+    if (isStudent) {
+      const [enrollRes, catsRes] = await Promise.all([api.get('/enrollments/mine'), api.get('/categories')]);
+      const enrolled = (enrollRes.data.data ?? [])
+        .map((e: { course: Course; progressPercent?: number }) =>
+          e.course ? { ...e.course, progressPercent: Number(e.progressPercent ?? 0) } : null,
+        )
+        .filter(Boolean) as Array<Course & { progressPercent: number }>;
+      return {
+        items: [],
+        myCourses: enrolled,
+        categories: catsRes.data.data,
+        meta: { page: 1, totalPages: 1, total: enrolled.length },
+      };
+    }
+    const [coursesRes, catsRes] = await Promise.all([
+      api.get('/courses', {
+        params: {
+          search: search || undefined,
+          status: status || undefined,
+          categoryId: categoryId || undefined,
+          teacherId: teacherId || undefined,
+          page,
+          limit: 9,
+        },
+      }),
+      api.get('/categories'),
+    ]);
+    return { items: coursesRes.data.data, myCourses: [], categories: catsRes.data.data, meta: coursesRes.data.meta };
+  };
+
+  // При смене фильтра прежний список остаётся на экране, пока не придёт новый.
+  const load = () =>
+    fetchPage()
+      .then((data) => {
+        setItems(data.items);
+        setMyCourses(data.myCourses);
+        setCategories(data.categories);
+        setMeta(data.meta);
+      })
+      .finally(() => setLoading(false));
 
   useEffect(() => {
     void load();
@@ -122,6 +127,8 @@ export function CoursesPage() {
     try {
       const { data } = await api.post('/courses', {
         ...values,
+        level: 'BEGINNER',
+        durationHours: 0,
         coverUrl: values.coverUrl || undefined,
       });
       toast.success('Курс создан');
@@ -133,7 +140,7 @@ export function CoursesPage() {
   };
 
   return (
-    <div>
+    <div className={isStudent ? 'mx-auto max-w-6xl px-4 py-8 sm:px-6' : undefined}>
       <PageHeader
         title={isStudent ? 'Мои курсы' : 'Курсы'}
         description={
@@ -217,17 +224,10 @@ export function CoursesPage() {
             <div className="md:col-span-2">
               <Textarea label="Описание" {...form.register('description')} />
             </div>
-            <Input label="Цена" type="number" {...form.register('price')} />
-            <Input label="Длительность (ч)" type="number" {...form.register('durationHours')} />
-            <Select label="Уровень" {...form.register('level')}>
-              <option value="BEGINNER">Начальный</option>
-              <option value="INTERMEDIATE">Средний</option>
-              <option value="ADVANCED">Продвинутый</option>
-            </Select>
+            <Input label="Цена (сом)" type="number" {...form.register('price')} />
             <Select label="Статус" {...form.register('status')}>
               <option value="DRAFT">Черновик</option>
               <option value="PUBLISHED">Опубликован</option>
-              <option value="ARCHIVED">Архив</option>
             </Select>
             <div className="md:col-span-2">
               <Input label="URL обложки" {...form.register('coverUrl')} />
@@ -247,7 +247,7 @@ export function CoursesPage() {
         filteredMyCourses.length === 0 ? (
           <EmptyState
             title="Пока нет купленных курсов"
-            description="Откройте «Обзор», чтобы выбрать и купить доступный курс"
+            description="На главной кабинета выберите программу и запишитесь"
           />
         ) : (
           <div className="space-y-8">
@@ -259,6 +259,7 @@ export function CoursesPage() {
                     course={course}
                     badge={{ label: 'Мой курс', tone: 'green' }}
                     progressPercent={course.progressPercent}
+                    cta={course.progressPercent >= 100 ? 'Открыть' : 'Продолжить'}
                   />
                 ))}
               </div>
@@ -273,6 +274,7 @@ export function CoursesPage() {
                       course={course}
                       badge={{ label: 'Завершён', tone: 'slate' }}
                       progressPercent={course.progressPercent}
+                      cta="Открыть"
                     />
                   ))}
                 </div>

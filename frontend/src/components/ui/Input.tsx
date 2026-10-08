@@ -4,7 +4,7 @@ import { cn } from '../../utils';
 import type { InputHTMLAttributes } from 'react';
 
 const fieldBase =
-  'w-full rounded-xl border border-kse-border bg-white px-3 text-sm text-ink outline-none transition placeholder:text-kse-gray focus:border-brand-400 focus:ring-2 focus:ring-brand-400/20 dark:bg-panel-dark dark:border-border-dark dark:text-white dark:placeholder:text-kse-gray';
+  'w-full rounded-[14px] border border-[var(--card-border)] bg-white/90 px-3 text-sm text-ink outline-none transition placeholder:text-kse-gray focus:border-brand-400 focus:ring-2 focus:ring-brand-400/20 dark:bg-panel-dark dark:border-border-dark dark:text-white dark:placeholder:text-kse-gray';
 
 interface InputProps extends InputHTMLAttributes<HTMLInputElement> {
   label?: string;

@@ -21,22 +21,18 @@ export function AssignmentsPage() {
   const submitForm = useForm({ defaultValues: { textAnswer: '', linkUrl: '' } });
   const reviewForm = useForm({ defaultValues: { grade: 90, comment: '' } });
 
-  const load = async () => {
-    setLoading(true);
-    try {
-      const [a, c] = await Promise.all([
-        api.get('/assignments', { params: { limit: 50 } }),
-        api.get('/courses', { params: { limit: 50 } }),
-      ]);
-      setItems(a.data.data);
-      setCourses(c.data.data);
-    } finally {
-      setLoading(false);
-    }
+  const load = () => {
+    // Состояние меняем только когда пришёл ответ: при перезагрузке список остаётся на экране.
+    return Promise.all([api.get('/assignments', { params: { limit: 50 } }), api.get('/courses', { params: { limit: 50 } })])
+      .then(([a, c]) => {
+        setItems(a.data.data);
+        setCourses(c.data.data);
+      })
+      .finally(() => setLoading(false));
   };
 
   useEffect(() => {
-    load();
+    void load();
   }, []);
 
   const openAssignment = async (id: string) => {
@@ -84,8 +80,15 @@ export function AssignmentsPage() {
   };
 
   return (
-    <div>
-      <PageHeader title="Задания" description="Создание, сдача и проверка домашних работ" />
+    <div className={user?.role === 'STUDENT' ? 'mx-auto max-w-6xl px-4 py-8 sm:px-6' : undefined}>
+      <PageHeader
+        title={user?.role === 'STUDENT' ? 'Задания' : 'Задания'}
+        description={
+          user?.role === 'STUDENT'
+            ? 'Домашние работы по вашим курсам — сдайте ответ и дождитесь проверки'
+            : 'Создание и проверка работ'
+        }
+      />
 
       {user?.role !== 'STUDENT' && (
         <Card className="mb-6 p-5">
@@ -103,7 +106,31 @@ export function AssignmentsPage() {
             <div className="md:col-span-2">
               <Textarea label="Описание" {...createForm.register('description')} />
             </div>
-            <Button type="submit">Создать</Button>
+            <div className="flex flex-wrap gap-2">
+              <Button type="submit">Создать</Button>
+              <Button
+                type="button"
+                variant="secondary"
+                onClick={async () => {
+                  const courseId = createForm.getValues('courseId');
+                  const title = createForm.getValues('title');
+                  const courseTitle = courses.find((c) => c.id === courseId)?.title ?? '';
+                  try {
+                    const { data } = await api.post('/assignments/generate', {
+                      topic: title,
+                      program: courseTitle,
+                    });
+                    createForm.setValue('title', data.data.title);
+                    createForm.setValue('description', data.data.description);
+                    toast.success('Черновик подставлен — поправьте и создайте');
+                  } catch (e) {
+                    toast.error(getErrorMessage(e));
+                  }
+                }}
+              >
+                Собрать черновик
+              </Button>
+            </div>
           </form>
         </Card>
       )}

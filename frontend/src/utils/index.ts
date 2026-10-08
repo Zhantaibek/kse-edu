@@ -1,4 +1,5 @@
 import { clsx, type ClassValue } from 'clsx';
+import { EDU_API_URL } from '../config';
 
 export function cn(...inputs: ClassValue[]) {
   return clsx(inputs);
@@ -53,11 +54,20 @@ export function statusLabel(status: string) {
 export function getErrorMessage(error: unknown) {
   if (typeof error === 'object' && error && 'response' in error) {
     const response = (error as {
-      response?: { data?: { error?: { message?: string } | string; message?: string } };
+      response?: {
+        data?: {
+          error?: { message?: string; details?: { formErrors?: string[]; fieldErrors?: Record<string, string[]> } } | string;
+          message?: string;
+        };
+      };
     }).response;
     const err = response?.data?.error;
     if (typeof err === 'string') return err;
-    return err?.message ?? response?.data?.message ?? 'Произошла ошибка';
+    const formError = err?.details?.formErrors?.find(Boolean);
+    const fieldError = err?.details?.fieldErrors
+      ? Object.values(err.details.fieldErrors).flat().find(Boolean)
+      : undefined;
+    return formError ?? fieldError ?? err?.message ?? response?.data?.message ?? 'Произошла ошибка';
   }
   if (error instanceof Error) return error.message;
   return 'Произошла ошибка';
@@ -67,7 +77,7 @@ export function getErrorMessage(error: unknown) {
 export function resolveMediaUrl(url?: string | null) {
   if (!url) return '';
   if (/^https?:\/\//i.test(url)) return url;
-  const apiBase = import.meta.env.VITE_API_URL || 'http://localhost:4100/api';
+  const apiBase = EDU_API_URL;
   if (url.startsWith('/api/') && /^https?:\/\//i.test(apiBase)) {
     const origin = apiBase.replace(/\/api\/?$/, '');
     return `${origin}${url}`;

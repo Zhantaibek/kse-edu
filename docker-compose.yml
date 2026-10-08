@@ -1,7 +1,25 @@
-# Учебный центр использует общий Postgres КФБ (kse-postgres :5433, БД education_crm).
-# Поднимите БД из соседнего kse-kg: npm run db:up (или здесь: npm run db:setup)
+# Учебный центр КФБ — отдельный проект со своей базой PostgreSQL (kse_edu, схема edu).
+# Локально можно использовать и уже установленный PostgreSQL — см. DATABASE_URL в backend/.env.
 
 services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: kse-edu-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: kse
+      POSTGRES_PASSWORD: kse
+      POSTGRES_DB: kse_edu
+    ports:
+      - "5434:5432"
+    volumes:
+      - edu-pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U kse -d kse_edu"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
   api:
     build:
       context: ./backend
@@ -11,25 +29,32 @@ services:
     environment:
       NODE_ENV: production
       PORT: 4100
-      # host.docker.internal — Postgres КФБ на хосте (порт 5433)
-      DATABASE_URL: postgresql://kse:kse@host.docker.internal:5433/education_crm?schema=public
+      DATABASE_URL: postgresql://kse:kse@postgres:5432/kse_edu?schema=edu
       JWT_SECRET: ${JWT_SECRET:-kse-edu-dev-secret-change-in-production}
       JWT_EXPIRES_IN: 7d
       CORS_ORIGIN: ${CORS_ORIGIN:-http://localhost:5173,http://127.0.0.1:5173}
+      APP_URL: ${APP_URL:-http://localhost:5173/education/app}
     ports:
       - "4100:4100"
-    extra_hosts:
-      - "host.docker.internal:host-gateway"
+    volumes:
+      - edu-uploads:/app/uploads
+    depends_on:
+      postgres:
+        condition: service_healthy
 
   web:
     build:
       context: ./frontend
       dockerfile: Dockerfile
       args:
-        VITE_API_URL: http://localhost:4100/api
+        VITE_API_URL: ${VITE_API_URL:-http://localhost:4100/api}
     container_name: kse-edu-web
     restart: unless-stopped
     ports:
       - "5173:80"
     depends_on:
       - api
+
+volumes:
+  edu-pgdata:
+  edu-uploads:

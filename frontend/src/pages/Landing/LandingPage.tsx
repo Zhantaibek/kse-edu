@@ -1,472 +1,383 @@
+import { FormEvent, useState } from 'react';
 import { Link } from 'react-router-dom';
-import {
-  BookOpen,
-  ChartNoAxesCombined,
-  ClipboardCheck,
-  CreditCard,
-  Bell,
-  GraduationCap,
-  ShieldCheck,
-  Users,
-  ArrowRight,
-  Check,
-  Layers,
-  LineChart,
-  FolderTree,
-} from 'lucide-react';
+import toast from 'react-hot-toast';
 import { BrandLogo } from '../../components/common/BrandLogo';
-import { Button } from '../../components/ui/Button';
 import { useAuthStore } from '../../store/authStore';
 
-const modules = [
+type TrackId = 'investors' | 'participants' | 'professionals';
+
+const tracks: {
+  id: TrackId;
+  label: string;
+  intro: string;
+  pieces: { n: number; title: string; text: string; meta: string }[];
+  note?: string;
+}[] = [
   {
-    icon: BookOpen,
-    title: 'Курсы и контент',
-    points: [
-      'Каталог курсов с категориями, уровнем и ценой',
-      'Модули, уроки (текст, видео, PDF, ссылки)',
-      'Публикация / черновик / архив',
-      'Прогресс прохождения по урокам',
+    id: 'investors',
+    label: 'Начинающим инвесторам',
+    intro: 'Как устроен рынок ценных бумаг Кыргызстана, кто на нём работает и с чего начать частному инвестору.',
+    pieces: [
+      {
+        n: 1,
+        title: 'Рынок и его участники',
+        text: 'Что такое КФБ, финансовые инструменты, роли брокера, эмитента и инвестора — первые шаги без жаргона.',
+        meta: '12 уроков · базовый · видео + квиз',
+      },
+      {
+        n: 2,
+        title: 'Как проходит сделка',
+        text: 'Торговое приложение, виды заявок, клиринг и расчёты. Разбираем путь ордера на реальных примерах КФБ.',
+        meta: '12 уроков · средний · видео + практика',
+      },
+      {
+        n: 3,
+        title: 'Портфель и риски',
+        text: 'Управление капиталом, психология инвестора и как собрать первый портфель из инструментов кыргызского рынка.',
+        meta: '12 уроков · продвинутый · видео + кейсы',
+      },
     ],
   },
   {
-    icon: Users,
-    title: 'Пользователи и роли',
-    points: [
-      'Админ, преподаватель, студент',
-      'Профили, статусы, блокировка',
-      'Запись на курсы и контроль доступа',
-      'Раздельные кабинеты под каждую роль',
+    id: 'participants',
+    label: 'Участникам рынка',
+    intro: 'Инфраструктура биржи, инструменты и правила торговли — для сотрудников брокеров, банков и эмитентов.',
+    note: 'Расписание очных потоков публикуется в учебном плане на kse.kg. Онлайн-модули открываются в личном кабинете.',
+    pieces: [
+      { n: 4, title: 'Организация и функционирование рынка ценных бумаг', text: 'Как устроен рынок и кто на нём отвечает.', meta: 'Очный и онлайн' },
+      { n: 5, title: 'Инфраструктура и механизмы биржи КФБ', text: 'Торги, клиринг и расчёты на инфраструктуре биржи.', meta: 'Очный и онлайн' },
+      { n: 6, title: 'Корпоративные облигации: возможности для бизнеса', text: 'Зачем компании выходит на долговой рынок.', meta: 'Очный и онлайн' },
+      { n: 7, title: 'Правила торговли, клиринг и расчёты', text: 'Регламент сделки от заявки до расчёта.', meta: 'Очный и онлайн' },
+      { n: 8, title: 'Новые редакции законов КР о рынке ценных бумаг и АО', text: 'Что изменилось в законе и как это читать на практике.', meta: 'Очный и онлайн' },
     ],
   },
   {
-    icon: ClipboardCheck,
-    title: 'Задания',
-    points: [
-      'Создание заданий к курсам',
-      'Сдача ответов студентами',
-      'Проверка и оценка преподавателем',
-      'Дедлайны и статусы работ',
-    ],
-  },
-  {
-    icon: CreditCard,
-    title: 'Оплаты',
-    points: [
-      'Mock-checkout как у реальных платежей',
-      'Оплата открывает доступ к курсу',
-      'История транзакций у студента и админа',
-      'Учёт выручки в аналитике',
-    ],
-  },
-  {
-    icon: LineChart,
-    title: 'Аналитика',
-    points: [
-      'Дашборд: студенты, курсы, доход',
-      'Графики регистраций и продаж',
-      'Популярные курсы и активность',
-      'Отчёты для админа и преподавателя',
-    ],
-  },
-  {
-    icon: Bell,
-    title: 'Уведомления',
-    points: [
-      'Новые записи на курс',
-      'Успешная оплата',
-      'Проверка заданий',
-      'Завершение курса',
+    id: 'professionals',
+    label: 'Профессиональным специалистам',
+    intro: 'Корпоративные треки, подготовка к листингу и отдельные программы для финансистов и эмитентов.',
+    note: 'Корпоративный формат согласуется отдельно: группа, даты и программа под задачи компании.',
+    pieces: [
+      { n: 9, title: 'Стратегическое управление', text: 'Решения, которые компания принимает до выхода на рынок.', meta: 'Корпоративный' },
+      { n: 10, title: 'Корпоративное управление и ESG', text: 'Практика совета и раскрытия для эмитента.', meta: 'Корпоративный' },
+      { n: 11, title: 'Исламские финансы (сукук)', text: 'Структура сукук и где она стыкуется с рынком КФБ.', meta: 'Корпоративный' },
+      { n: 12, title: 'Подготовка к листингу на КФБ', text: 'Что собрать до подачи на листинг.', meta: 'Корпоративный' },
+      { n: 13, title: 'Личная эффективность и коммуникации', text: 'Как говорить о сделке и решении внутри компании.', meta: 'Корпоративный' },
     ],
   },
 ];
 
-const studentPath = [
-  { title: 'Регистрация', text: 'Создаёте аккаунт студента и входите в личный кабинет.' },
-  { title: 'Выбор курса', text: 'Смотрите каталог, описание, программу и стоимость.' },
-  { title: 'Оплата', text: 'Оплачиваете курс через безопасный mock-checkout (демо).' },
-  { title: 'Обучение', text: 'Проходите уроки, сдаёте задания, следите за прогрессом.' },
+const steps = [
+  { n: 1, title: 'Видеолекции', text: 'Короткие уроки по 5–12 минут — можно смотреть с телефона.' },
+  { n: 2, title: 'Онлайн-курсы в кабинете', text: 'Модули, прогресс, задания и доступ после регистрации.' },
+  { n: 3, title: 'Вебинары с экспертами', text: 'Разборы рынка и живые сессии с практиками КФБ.' },
+  { n: 4, title: 'Лекции и семинары', text: 'Очные потоки учебного центра — по учебному плану года.' },
+  { n: 5, title: 'Материалы и кейсы', text: 'Презентации, PDF и примеры сделок кыргызского рынка.' },
+  { n: 6, title: 'Групповые треки', text: 'Корпоративное обучение для команд брокеров и эмитентов.' },
 ];
 
-const teacherPath = [
-  { title: 'Создание курса', text: 'Заполняете программу, цену, уровень и обложку.' },
-  { title: 'Контент', text: 'Добавляете модули, уроки и учебные материалы.' },
-  { title: 'Задания', text: 'Публикуете задания и проверяете работы студентов.' },
-  { title: 'Контроль', text: 'Видите активность группы и результаты обучения.' },
+const reasons = [
+  {
+    title: 'Реальные примеры КФБ',
+    text: 'Уроки опираются на инструменты, регламенты и практику Кыргызской фондовой биржи, а не на абстрактную теорию.',
+  },
+  {
+    title: 'В своём темпе',
+    text: 'Самостоятельное прохождение в кабинете: возвращайтесь к любому модулю, сдавайте задания когда удобно.',
+  },
+  {
+    title: 'Официально от КФБ',
+    text: 'Учебный центр работает с 1995 года, с 2001-го — по лицензии на подготовку специалистов рынка ценных бумаг.',
+  },
 ];
 
 const faqs = [
   {
-    q: 'Что такое EduCRM?',
-    a: 'Это образовательная CRM-платформа Кыргызской фондовой биржи: управление курсами, студентами, преподавателями, заданиями, оплатами и аналитикой в одной системе.',
+    q: 'С чего начать обучение?',
+    a: 'Зарегистрируйтесь на платформе и откройте направление «Начинающим инвесторам». Три курса идут по возрастанию сложности, но опытные участники могут сразу выбрать нужный модуль.',
   },
   {
-    q: 'Кому подходит платформа?',
-    a: 'Студентам — для обучения и покупки курсов; преподавателям — для ведения программ и проверки работ; администраторам — для полного управления платформой.',
+    q: 'Нужно ли проходить курсы строго по порядку?',
+    a: 'Для новичков лучше идти последовательно. Если вы уже работаете на рынке, можно начать с нужного трека — доступ в кабинете не блокирует остальные программы.',
   },
   {
-    q: 'Оплата настоящая?',
-    a: 'Нет. Встроен mock-платёжный шлюз для демонстрации: оплата картой или QR-кодом. Деньги не списываются. Тестовая карта успеха: 4242 4242 4242 4242.',
+    q: 'Обучение платное?',
+    a: 'Часть вводных материалов доступна после регистрации. Стоимость платных курсов указана в каталоге личного кабинета. Вопросы по корпоративным программам — office@kse.kg.',
   },
   {
-    q: 'Как начать работу?',
-    a: 'Нажмите «Регистрация», создайте аккаунт студента или преподавателя и войдите в кабинет. Администратор назначается отдельно при развёртывании системы.',
+    q: 'Нужно ли приезжать очно?',
+    a: 'Онлайн-курсы проходят в личном кабинете. Отдельные программы учебного центра — очные или смешанные, по учебному плану на год. Даты уточняйте при записи.',
   },
   {
-    q: 'Какие данные хранит система?',
-    a: 'Профили пользователей, курсы и прогресс, задания и оценки, платежи (mock), уведомления и агрегированную аналитику.',
+    q: 'Как записаться на очный курс или вебинар?',
+    a: 'Анонсы появляются на платформе и на kse.kg. Можно также написать в учебный центр: +996 772 63-79-97 или форму ниже.',
   },
 ];
 
-const outcomes = [
-  {
-    title: 'Прозрачный учебный процесс',
-    text: 'Видно, кто записан, на каком уроке студент, какие задания сданы и где есть отставание.',
-  },
-  {
-    title: 'Меньше ручной рутины',
-    text: 'Курсы, записи, проверки и оплаты ведутся в одном кабинете — без таблиц и переписок «вразнобой».',
-  },
-  {
-    title: 'Контроль доступа к контенту',
-    text: 'Платный курс открывается после оплаты, бесплатный — по записи. Роли ограничивают разделы системы.',
-  },
-  {
-    title: 'Понятная картина для руководства',
-    text: 'Дашборд показывает активность, популярные курсы и выручку — решения опираются на данные.',
-  },
+const nav = [
+  { href: '#courses', label: 'Курсы' },
+  { href: '#formats', label: 'Форматы' },
+  { href: '#faq', label: 'Вопросы' },
+  { href: '#contacts', label: 'Контакты' },
 ];
+
+const field =
+  'mt-1 w-full border border-[#14171a] bg-white px-3 py-3 text-[15px] text-[#14171a] outline-none';
 
 export function LandingPage() {
   const token = useAuthStore((s) => s.token);
+  const [trackId, setTrackId] = useState<TrackId>('investors');
+  const [menuOpen, setMenuOpen] = useState(false);
+  const [question, setQuestion] = useState({ name: '', phone: '', email: '', message: '' });
+  const [sending, setSending] = useState(false);
+  const track = tracks.find((t) => t.id === trackId)!;
+  const cabinet = token ? '/dashboard' : '/register';
+
+  const sendQuestion = (e: FormEvent) => {
+    e.preventDefault();
+    if (!question.name.trim() || !question.email.trim() || !question.message.trim()) {
+      toast.error('Укажите имя, email и сообщение');
+      return;
+    }
+    setSending(true);
+    const body = [
+      question.message.trim(),
+      '',
+      `ФИО: ${question.name.trim()}`,
+      question.phone.trim() ? `Телефон: ${question.phone.trim()}` : '',
+      `Email: ${question.email.trim()}`,
+    ]
+      .filter(Boolean)
+      .join('\n');
+    window.location.href = `mailto:office@kse.kg?subject=${encodeURIComponent(
+      'Вопрос в учебный центр КФБ',
+    )}&body=${encodeURIComponent(body)}`;
+    toast.success('Откроется почтовая программа — отправьте письмо в учебный центр');
+    setQuestion({ name: '', phone: '', email: '', message: '' });
+    setSending(false);
+  };
 
   return (
-    <div className="min-h-screen bg-surface text-ink">
-      <header className="absolute inset-x-0 top-0 z-20">
-        <div className="mx-auto flex h-16 max-w-6xl items-center justify-between px-4 sm:px-6">
-          <BrandLogo variant="dark" />
-          <div className="flex items-center gap-2">
-            <a
-              href="/education"
-              className="hidden text-sm font-medium text-white/80 hover:text-white sm:inline"
-            >
-              ← Сайт КФБ
+    <div className="kse-official">
+      <header className="sticky top-0 z-20 border-b border-[#14171a] bg-white">
+        <div className="mx-auto flex max-w-6xl items-center justify-between gap-4 px-4 py-4 sm:px-6">
+          <BrandLogo />
+          <nav className="hidden items-center gap-6 text-[14px] lg:flex">
+            {nav.map((item) => (
+              <a key={item.href} href={item.href} className="hover:text-[#8e1d2c]">
+                {item.label}
+              </a>
+            ))}
+          </nav>
+          <div className="flex items-center gap-4">
+            <a href="https://www.kse.kg/ru" className="hidden text-[14px] sm:inline">
+              Сайт КФБ
             </a>
             {token ? (
-              <Link to="/dashboard">
-                <Button className="!bg-white !text-ink hover:!bg-brand-50">В кабинет</Button>
+              <Link to="/dashboard" className="bg-[#8e1d2c] px-4 py-2 text-[14px] font-medium text-white">
+                В кабинет
               </Link>
             ) : (
-              <>
-                <Link to="/login">
-                  <Button variant="ghost" className="!text-white hover:!bg-white/10 hover:!text-white">
-                    Войти
-                  </Button>
-                </Link>
-                <Link to="/register" className="hidden sm:inline-flex">
-                  <Button className="!bg-white !text-ink hover:!bg-brand-50">Регистрация</Button>
-                </Link>
-              </>
+              <Link to="/login" className="text-[14px]">
+                Войти
+              </Link>
             )}
+            <button type="button" className="text-[14px] lg:hidden" onClick={() => setMenuOpen((v) => !v)}>
+              Меню
+            </button>
           </div>
         </div>
+        {menuOpen && (
+          <div className="flex flex-col gap-2 border-t border-[#14171a] px-4 py-3 lg:hidden">
+            {nav.map((item) => (
+              <a key={item.href} href={item.href} onClick={() => setMenuOpen(false)} className="py-1 text-sm uppercase tracking-[0.12em]">
+                {item.label}
+              </a>
+            ))}
+          </div>
+        )}
       </header>
 
-      {/* Hero */}
-      <section className="relative isolate flex min-h-[100svh] items-end overflow-hidden pb-16 pt-28 sm:items-center sm:pb-24 sm:pt-20">
-        <div
-          className="absolute inset-0 bg-cover bg-center"
-          style={{
-            backgroundImage:
-              'url(https://images.unsplash.com/photo-1522202176988-66273c2fd55f?auto=format&fit=crop&w=2000&q=80)',
-          }}
-        />
-        <div className="absolute inset-0 bg-gradient-to-r from-[#0f1a1d]/92 via-[#152428]/78 to-[#2d6875]/45" />
-        <div className="absolute inset-0 bg-gradient-to-t from-[#0f1a1d]/70 via-transparent to-[#0f1a1d]/35" />
-
-        <div className="landing-hero-copy relative mx-auto w-full max-w-6xl px-4 sm:px-6">
-          <p className="font-display text-5xl font-extrabold tracking-tight text-white sm:text-6xl lg:text-7xl">
-            Edu<span className="text-brand-300">CRM</span>
-          </p>
-          <h1 className="mt-4 max-w-xl font-display text-2xl font-semibold leading-snug tracking-tight text-white/95 sm:text-3xl">
-            Образовательная платформа Кыргызской фондовой биржи
+      <section className="mx-auto grid max-w-6xl items-start gap-12 px-4 py-14 sm:px-6 lg:grid-cols-[1.05fr_0.95fr] lg:py-20">
+        <div>
+          <h1 className="max-w-[14ch] text-[2.6rem] font-medium leading-[1.05] tracking-[-0.03em] sm:text-6xl">
+            Курсы по финансовому рынку
           </h1>
-          <p className="mt-4 max-w-lg text-base leading-relaxed text-white/75 sm:text-lg">
-            Единая система для запуска курсов, обучения студентов, проверки заданий, приёма оплаты и аналитики.
+          <p className="mt-6 max-w-[40ch] text-lg leading-relaxed text-[#3e454c]">
+            Образовательная платформа Кыргызской фондовой биржи для частных инвесторов, студентов и специалистов рынка ценных бумаг.
           </p>
-          <div className="mt-8 flex flex-wrap items-center gap-3">
-            {token ? (
-              <Link to="/dashboard">
-                <Button size="lg" className="bg-brand-400 text-white hover:bg-brand-500">
-                  Перейти в кабинет
-                  <ArrowRight size={18} />
-                </Button>
-              </Link>
-            ) : (
-              <>
-                <Link to="/register">
-                  <Button size="lg" className="bg-brand-400 text-white hover:bg-brand-500">
-                    Начать бесплатно
-                    <ArrowRight size={18} />
-                  </Button>
-                </Link>
-                <Link to="/login">
-                  <Button
-                    size="lg"
-                    variant="secondary"
-                    className="!border-white/25 !bg-white/10 !text-white backdrop-blur hover:!bg-white/20"
-                  >
-                    Войти
-                  </Button>
-                </Link>
-              </>
-            )}
+          <Link to={cabinet} className="mt-8 inline-block bg-[#8e1d2c] px-6 py-3 text-[15px] font-medium text-white">
+            {token ? 'Открыть кабинет' : 'Начать'}
+          </Link>
+        </div>
+        <div role="tablist" aria-label="Программы" className="border-t border-[#14171a]">
+          {tracks.map((item, index) => {
+            const on = item.id === trackId;
+            return (
+              <button
+                key={item.id}
+                type="button"
+                role="tab"
+                aria-selected={on}
+                onClick={() => setTrackId(item.id)}
+                className={`block w-full border-b border-[#14171a] px-4 py-4 text-left transition-colors ${on ? 'bg-[#14171a] text-white' : 'bg-white hover:bg-[#f4f5f6]'}`}
+              >
+                <span className="text-xs tabular-nums">{String(index + 1).padStart(2, '0')}</span>
+                <span className="mt-1 block text-lg">{item.label}</span>
+                {on && <span className="mt-2 block text-sm leading-relaxed text-white/80">{item.intro}</span>}
+              </button>
+            );
+          })}
+        </div>
+      </section>
+
+      <section id="about" className="border-y border-[#14171a]">
+        <div className="mx-auto grid max-w-6xl gap-8 px-4 py-14 sm:px-6 lg:grid-cols-[1fr_1fr]">
+          <h2 className="text-4xl leading-[0.95] sm:text-5xl">
+            Финансовая грамотность и подготовка специалистов рынка
+          </h2>
+          <div className="space-y-4 text-[17px] leading-relaxed">
+            <p>
+              Учебный центр КФБ — образовательная инициатива ЗАО «Кыргызская фондовая биржа». С 1995 года готовим специалистов рынка ценных бумаг: брокеров, сотрудников эмитентов, частных инвесторов и студентов.
+            </p>
+            <p>
+              На платформе — онлайн-курсы, вебинары и материалы для широкой аудитории. Очные программы идут по учебному плану года: рынок ценных бумаг, корпоративное управление, ESG, сукук и стратегическое управление.
+            </p>
           </div>
         </div>
       </section>
 
-      {/* What / why */}
-      <section className="landing-section mx-auto max-w-6xl px-4 py-20 sm:px-6 sm:py-24">
-        <p className="text-sm font-semibold uppercase tracking-[0.18em] text-brand-600">О платформе</p>
-        <h2 className="mt-3 max-w-3xl font-display text-3xl font-bold tracking-tight sm:text-4xl">
-          Зачем нужна EduCRM
-        </h2>
-        <div className="mt-8 grid gap-10 lg:grid-cols-2">
-          <p className="text-lg leading-relaxed text-kse-muted">
-            Вместо разрозненных таблиц, мессенджеров и отдельных сервисов оплаты EduCRM собирает учебный процесс
-            в одном кабинете: от публикации курса до отчёта по прогрессу и выручке.
-          </p>
-          <ul className="space-y-3 text-[15px] text-ink">
-            {[
-              'Централизованный каталог курсов и программ',
-              'Роли с разными правами доступа',
-              'Прогресс обучения и проверка заданий',
-              'Mock-оплата курсов и учёт платежей',
-              'Дашборд и аналитика для руководства',
-            ].map((item) => (
-              <li key={item} className="flex gap-3">
-                <Check size={18} className="mt-0.5 shrink-0 text-brand-500" />
-                <span>{item}</span>
+      <section id="courses" className="mx-auto max-w-6xl px-4 py-16 sm:px-6">
+        <h2 className="text-4xl sm:text-5xl">Программа</h2>
+        <p className="mt-3 max-w-2xl text-[17px] leading-relaxed">{track.intro}</p>
+        <ol className="mt-10 divide-y divide-[#14171a] border-y border-[#14171a]">
+          {track.pieces.map((piece) => (
+            <li key={piece.n} className="grid gap-3 py-5 sm:grid-cols-[4rem_1fr_auto] sm:items-baseline">
+              <span className="text-3xl">{piece.n}</span>
+              <div>
+                <h3 className="text-xl">{piece.title}</h3>
+                <p className="mt-1 max-w-2xl text-sm leading-relaxed text-[#3e454c]">{piece.text}</p>
+              </div>
+              <span className="text-xs uppercase tracking-[0.12em]">{piece.meta}</span>
+            </li>
+          ))}
+        </ol>
+        {track.note && <p className="mt-6 max-w-2xl text-sm leading-relaxed">{track.note}</p>}
+        <Link to={cabinet} className="mt-8 inline-block border border-[#14171a] px-5 py-3 text-sm uppercase tracking-[0.14em]">
+          {token ? 'Перейти к курсам' : 'Открыть программу'}
+        </Link>
+      </section>
+
+      <section id="formats" className="border-y border-[#14171a] bg-[#f4f5f6]">
+        <div className="mx-auto grid max-w-6xl gap-10 px-4 py-16 sm:px-6 lg:grid-cols-[0.7fr_1.3fr]">
+          <h2 className="text-4xl sm:text-5xl">Форматы обучения</h2>
+          <ol className="space-y-6">
+            {steps.map((step) => (
+              <li key={step.n} className="grid grid-cols-[auto_1fr] gap-4">
+                <span className="text-3xl text-[#8e1d2c]">{step.n}</span>
+                <div>
+                  <h3 className="text-lg">{step.title}</h3>
+                  <p className="mt-1 text-sm leading-relaxed">{step.text}</p>
+                </div>
               </li>
             ))}
-          </ul>
+          </ol>
         </div>
       </section>
 
-      {/* Modules inventory */}
-      <section className="border-y border-kse-border bg-panel py-20 sm:py-24 dark:border-border-dark dark:bg-panel-dark">
-        <div className="mx-auto max-w-6xl px-4 sm:px-6">
-          <div className="flex items-end justify-between gap-4">
-            <div>
-              <p className="text-sm font-semibold uppercase tracking-[0.18em] text-brand-600">Модули системы</p>
-              <h2 className="mt-3 font-display text-3xl font-bold tracking-tight sm:text-4xl">
-                Что умеет платформа
-              </h2>
-            </div>
-            <Layers className="hidden h-8 w-8 text-brand-400 sm:block" />
-          </div>
-          <div className="mt-12 grid gap-x-10 gap-y-12 sm:grid-cols-2 lg:grid-cols-3">
-            {modules.map((m) => (
-              <div key={m.title}>
-                <div className="mb-3 flex items-center gap-3">
-                  <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-brand-50 text-brand-600 dark:bg-brand-900/40 dark:text-brand-300">
-                    <m.icon size={20} />
-                  </div>
-                  <h3 className="font-display text-lg font-bold tracking-tight">{m.title}</h3>
-                </div>
-                <ul className="space-y-2 text-sm leading-relaxed text-kse-muted">
-                  {m.points.map((p) => (
-                    <li key={p} className="flex gap-2">
-                      <span className="mt-2 h-1 w-1 shrink-0 rounded-full bg-brand-400" />
-                      {p}
-                    </li>
-                  ))}
-                </ul>
-              </div>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      {/* Scenarios */}
-      <section className="mx-auto max-w-6xl px-4 py-20 sm:px-6 sm:py-24">
-        <p className="text-sm font-semibold uppercase tracking-[0.18em] text-brand-600">Сценарии</p>
-        <h2 className="mt-3 font-display text-3xl font-bold tracking-tight sm:text-4xl">
-          Как проходит работа
-        </h2>
-        <div className="mt-12 grid gap-14 lg:grid-cols-2">
-          <div>
-            <div className="mb-6 flex items-center gap-2 text-brand-600">
-              <GraduationCap size={20} />
-              <h3 className="font-display text-xl font-bold text-ink">Путь студента</h3>
-            </div>
-            <ol className="space-y-5">
-              {studentPath.map((s, i) => (
-                <li key={s.title} className="grid grid-cols-[2.5rem_1fr] gap-3">
-                  <div className="font-mono text-sm font-bold text-brand-500">{String(i + 1).padStart(2, '0')}</div>
-                  <div>
-                    <div className="font-semibold">{s.title}</div>
-                    <p className="mt-1 text-sm text-kse-muted">{s.text}</p>
-                  </div>
-                </li>
-              ))}
-            </ol>
-          </div>
-          <div>
-            <div className="mb-6 flex items-center gap-2 text-brand-600">
-              <BookOpen size={20} />
-              <h3 className="font-display text-xl font-bold text-ink">Путь преподавателя</h3>
-            </div>
-            <ol className="space-y-5">
-              {teacherPath.map((s, i) => (
-                <li key={s.title} className="grid grid-cols-[2.5rem_1fr] gap-3">
-                  <div className="font-mono text-sm font-bold text-brand-500">{String(i + 1).padStart(2, '0')}</div>
-                  <div>
-                    <div className="font-semibold">{s.title}</div>
-                    <p className="mt-1 text-sm text-kse-muted">{s.text}</p>
-                  </div>
-                </li>
-              ))}
-            </ol>
-          </div>
-        </div>
-      </section>
-
-      {/* Roles detail */}
-      <section className="border-y border-kse-border bg-gradient-to-br from-brand-700 via-brand-600 to-brand-500 py-20 text-white sm:py-24">
-        <div className="mx-auto max-w-6xl px-4 sm:px-6">
-          <p className="text-sm font-semibold uppercase tracking-[0.18em] text-brand-100">Доступы</p>
-          <h2 className="mt-3 font-display text-3xl font-bold tracking-tight sm:text-4xl">Три роли — три кабинета</h2>
-          <div className="mt-12 grid gap-8 md:grid-cols-3">
-            <div>
-              <ShieldCheck className="mb-3 text-brand-200" size={22} />
-              <h3 className="font-display text-xl font-bold">Администратор</h3>
-              <p className="mt-3 text-sm leading-relaxed text-white/75">
-                Пользователи, преподаватели, категории, все курсы, оплаты, аналитика и настройки системы.
-              </p>
-            </div>
-            <div>
-              <BookOpen className="mb-3 text-brand-200" size={22} />
-              <h3 className="font-display text-xl font-bold">Преподаватель</h3>
-              <p className="mt-3 text-sm leading-relaxed text-white/75">
-                Свои курсы, модули и уроки, задания, проверка работ, студенты курса и базовая аналитика.
-              </p>
-            </div>
-            <div>
-              <GraduationCap className="mb-3 text-brand-200" size={22} />
-              <h3 className="font-display text-xl font-bold">Студент</h3>
-              <p className="mt-3 text-sm leading-relaxed text-white/75">
-                Каталог, покупка/запись, обучение, сдача заданий, прогресс, история оплат и уведомления.
-              </p>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* Outcomes */}
-      <section className="mx-auto max-w-6xl px-4 py-20 sm:px-6 sm:py-24">
-        <p className="text-sm font-semibold uppercase tracking-[0.18em] text-brand-600">Эффект</p>
-        <h2 className="mt-3 max-w-2xl font-display text-3xl font-bold tracking-tight sm:text-4xl">
-          Что меняется после внедрения
-        </h2>
-        <p className="mt-4 max-w-2xl text-kse-muted">
-          EduCRM закрывает типовые разрывы между обучением, учётом студентов и контролем оплат.
-        </p>
-        <div className="mt-12 grid gap-8 sm:grid-cols-2">
-          {outcomes.map((item, i) => (
-            <div key={item.title} className="border-l-2 border-brand-400 pl-5">
-              <div className="font-mono text-xs font-semibold text-brand-500">
-                {String(i + 1).padStart(2, '0')}
-              </div>
-              <h3 className="mt-2 font-display text-xl font-bold tracking-tight">{item.title}</h3>
-              <p className="mt-2 text-sm leading-relaxed text-kse-muted">{item.text}</p>
-            </div>
-          ))}
-        </div>
-      </section>
-
-      {/* Also includes */}
-      <section className="border-t border-kse-border bg-kse-surface/60 py-16 dark:border-border-dark dark:bg-panel-dark/50">
-        <div className="mx-auto max-w-6xl px-4 sm:px-6">
-          <h2 className="font-display text-2xl font-bold tracking-tight">Также в системе</h2>
-          <div className="mt-8 grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
-            {[
-              { icon: FolderTree, t: 'Категории курсов', d: 'Структура каталога и тематики программ' },
-              { icon: ChartNoAxesCombined, t: 'Отчёты', d: 'Регистрации, продажи, популярные курсы' },
-              { icon: ShieldCheck, t: 'Права доступа', d: 'Разграничение разделов по ролям' },
-              { icon: Bell, t: 'Лента событий', d: 'Уведомления о ключевых действиях' },
-            ].map((item) => (
-              <div key={item.t}>
-                <item.icon size={20} className="text-brand-500" />
-                <div className="mt-3 font-semibold">{item.t}</div>
-                <p className="mt-1 text-sm text-kse-muted">{item.d}</p>
-              </div>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      {/* FAQ */}
-      <section className="mx-auto max-w-6xl px-4 py-20 sm:px-6 sm:py-24">
-        <p className="text-sm font-semibold uppercase tracking-[0.18em] text-brand-600">FAQ</p>
-        <h2 className="mt-3 font-display text-3xl font-bold tracking-tight sm:text-4xl">Частые вопросы</h2>
-        <div className="mt-10 divide-y divide-kse-border dark:divide-border-dark">
-          {faqs.map((item) => (
-            <details key={item.q} className="group py-5">
-              <summary className="cursor-pointer list-none font-semibold tracking-tight marker:content-none [&::-webkit-details-marker]:hidden">
-                <span className="flex items-center justify-between gap-4">
-                  {item.q}
-                  <span className="text-brand-500 transition group-open:rotate-45">+</span>
-                </span>
-              </summary>
-              <p className="mt-3 max-w-3xl text-sm leading-relaxed text-kse-muted">{item.a}</p>
-            </details>
-          ))}
-        </div>
-      </section>
-
-      {/* Final CTA */}
-      <section className="mx-auto max-w-6xl px-4 pb-20 sm:px-6 sm:pb-28">
-        <div className="relative overflow-hidden rounded-[2rem] bg-[#152428] px-6 py-14 sm:px-12">
-          <div className="pointer-events-none absolute -right-20 top-0 h-64 w-64 rounded-full bg-brand-400/25 blur-3xl" />
-          <div className="relative max-w-xl">
-            <h2 className="font-display text-3xl font-bold tracking-tight text-white sm:text-4xl">
-              Готовы посмотреть EduCRM изнутри?
-            </h2>
-            <p className="mt-4 text-base leading-relaxed text-white/70">
-              Создайте аккаунт студента или преподавателя — кабинет откроется сразу после регистрации.
+      <section className="mx-auto max-w-6xl px-4 py-16 sm:px-6">
+        <h2 className="text-4xl sm:text-5xl">Почему учебный центр КФБ</h2>
+        <div className="mt-8 grid gap-8 lg:grid-cols-3">
+          {reasons.map((item, i) => (
+            <p key={item.title} className="border-t border-[#14171a] pt-4">
+              <span className="text-3xl text-[#8e1d2c]">{i + 1}</span>
+              <span className="mt-2 block text-lg">{item.title}</span>
+              <span className="mt-2 block text-sm leading-relaxed text-[#3e454c]">{item.text}</span>
             </p>
-            <div className="mt-8 flex flex-wrap gap-3">
-              {token ? (
-                <Link to="/dashboard">
-                  <Button size="lg" className="bg-brand-400 hover:bg-brand-500">
-                    Перейти в кабинет
-                  </Button>
-                </Link>
-              ) : (
-                <>
-                  <Link to="/register">
-                    <Button size="lg" className="bg-brand-400 hover:bg-brand-500">
-                      Создать аккаунт
-                    </Button>
-                  </Link>
-                  <Link to="/login">
-                    <Button size="lg" variant="secondary" className="!border-white/20 !bg-transparent !text-white hover:!bg-white/10">
-                      Войти
-                    </Button>
-                  </Link>
-                </>
-              )}
-            </div>
+          ))}
+        </div>
+      </section>
+
+      <section id="faq" className="border-t border-[#14171a]">
+        <div className="mx-auto max-w-6xl px-4 py-16 sm:px-6">
+          <h2 className="text-4xl sm:text-5xl">Частые вопросы</h2>
+          <div className="mt-8 divide-y divide-[#14171a] border-y border-[#14171a]">
+            {faqs.map((item) => (
+              <details key={item.q} className="group py-4">
+                <summary className="cursor-pointer list-none font-medium marker:content-none [&::-webkit-details-marker]:hidden">
+                  <span className="flex items-center justify-between gap-4">
+                    {item.q}
+                    <span className="text-[#8e1d2c] group-open:hidden">+</span>
+                    <span className="hidden text-[#8e1d2c] group-open:inline">–</span>
+                  </span>
+                </summary>
+                <p className="mt-3 max-w-3xl text-sm leading-relaxed">{item.a}</p>
+              </details>
+            ))}
           </div>
         </div>
       </section>
 
-      <footer className="border-t border-kse-border py-8 dark:border-border-dark">
-        <div className="mx-auto flex max-w-6xl flex-col items-start justify-between gap-4 px-4 sm:flex-row sm:items-center sm:px-6">
-          <BrandLogo />
-          <p className="text-sm text-kse-muted">© {new Date().getFullYear()} EduCRM · Кыргызская фондовая биржа</p>
+      <section id="contacts" className="border-t border-[#14171a] bg-[#f4f5f6]">
+        <div className="mx-auto grid max-w-6xl gap-12 px-4 py-16 sm:px-6 lg:grid-cols-2">
+          <div>
+            <h2 className="text-4xl sm:text-5xl">По вопросам обучения</h2>
+            <ul className="mt-8 space-y-4 text-sm leading-relaxed">
+              <li>
+                <a className="underline decoration-[#8e1d2c] underline-offset-4" href="mailto:office@kse.kg">
+                  office@kse.kg
+                </a>
+              </li>
+              <li>Учебный центр: +996 772 63-79-97</li>
+              <li>Приёмная: +996 312 31-14-84</li>
+              <li>WhatsApp: +996 551 31-14-84</li>
+              <li>
+                <a className="underline decoration-[#8e1d2c] underline-offset-4" href="https://www.kse.kg/ru/EduPlan" target="_blank" rel="noreferrer">
+                  Учебный план на 2026 год
+                </a>
+              </li>
+            </ul>
+          </div>
+          <form className="space-y-3" onSubmit={sendQuestion}>
+            <h3 className="text-3xl">Не нашли свой вопрос?</h3>
+            <p className="text-sm">Задайте его нам — ответим по почте или телефону.</p>
+            <label className="block text-xs uppercase tracking-[0.14em]">
+              ФИО
+              <input className={`${field} mt-1`} value={question.name} onChange={(e) => setQuestion((s) => ({ ...s, name: e.target.value }))} />
+            </label>
+            <label className="block text-xs uppercase tracking-[0.14em]">
+              Телефон
+              <input className={`${field} mt-1`} value={question.phone} onChange={(e) => setQuestion((s) => ({ ...s, phone: e.target.value }))} />
+            </label>
+            <label className="block text-xs uppercase tracking-[0.14em]">
+              Email
+              <input className={`${field} mt-1`} type="email" value={question.email} onChange={(e) => setQuestion((s) => ({ ...s, email: e.target.value }))} />
+            </label>
+            <label className="block text-xs uppercase tracking-[0.14em]">
+              Сообщение
+              <textarea className={`${field} mt-1 min-h-28`} value={question.message} onChange={(e) => setQuestion((s) => ({ ...s, message: e.target.value }))} />
+            </label>
+            <button type="submit" disabled={sending} className="bg-[#14171a] px-5 py-3 text-[15px] text-white disabled:opacity-60">
+              Отправить
+            </button>
+          </form>
         </div>
+      </section>
+
+      <footer className="border-t border-[#14171a] px-4 py-8 sm:px-6">
+        <div className="mx-auto flex max-w-6xl flex-col justify-between gap-6 sm:flex-row">
+          <div>
+            <BrandLogo />
+            <p className="mt-3 max-w-sm text-sm">ЗАО «Кыргызская фондовая биржа». Учебный центр по подготовке специалистов рынка ценных бумаг.</p>
+          </div>
+          <div className="flex flex-col gap-2 text-sm">
+            <Link to="/login">Войти</Link>
+            <Link to="/register">Регистрация</Link>
+            <a href="https://www.kse.kg/ru/Education">О центре на kse.kg</a>
+          </div>
+        </div>
+        <p className="mx-auto mt-8 max-w-6xl text-xs">
+          © {new Date().getFullYear()} ЗАО «Кыргызская фондовая биржа». Материалы учебного центра — для обучения, не являются индивидуальной инвестиционной рекомендацией.
+        </p>
       </footer>
     </div>
   );

@@ -16,6 +16,8 @@ import {
   paginationSchema,
   updateCategorySchema,
   updateCourseSchema,
+  createVideoSchema,
+  updateVideoSchema,
   updateLessonSchema,
   updateModuleSchema,
   upsertCourseReviewSchema,
@@ -34,6 +36,7 @@ coursesRouter.patch('/:id', authenticate, authorize('ADMIN', 'TEACHER'), validat
 coursesRouter.delete('/:id', authenticate, authorize('ADMIN', 'TEACHER'), courseController.remove);
 coursesRouter.get('/:courseId/lessons', authenticate, courseController.listLessons);
 coursesRouter.post('/:courseId/modules', authenticate, authorize('ADMIN', 'TEACHER'), validate(createModuleSchema), courseController.addModule);
+coursesRouter.post('/:courseId/videos', authenticate, authorize('ADMIN', 'TEACHER'), validate(createVideoSchema), courseController.addVideo);
 coursesRouter.post('/:courseId/lessons', authenticate, authorize('ADMIN', 'TEACHER'), validate(createLessonSchema), courseController.addLesson);
 coursesRouter.post('/:courseId/progress/complete', authenticate, authorize('STUDENT', 'ADMIN'), validate(completeLessonSchema), enrollmentController.completeLesson);
 coursesRouter.get('/:courseId/progress', authenticate, enrollmentController.getProgress);
@@ -47,6 +50,7 @@ coursesRouter.post(
 );
 
 lessonsRouter.patch('/:id', authenticate, authorize('ADMIN', 'TEACHER'), validate(updateLessonSchema), courseController.updateLesson);
+lessonsRouter.patch('/:id/video', authenticate, authorize('ADMIN', 'TEACHER'), validate(updateVideoSchema), courseController.updateVideo);
 lessonsRouter.delete('/:id', authenticate, authorize('ADMIN', 'TEACHER'), courseController.deleteLesson);
 
 modulesRouter.patch('/:id', authenticate, authorize('ADMIN', 'TEACHER'), validate(updateModuleSchema), courseController.updateModule);

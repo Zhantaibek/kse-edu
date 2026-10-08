@@ -3,8 +3,8 @@ import type { Role } from '@prisma/client';
 import { ConflictError, UnauthorizedError, ValidationError } from '../utils/errors.js';
 import { signToken } from '../utils/jwt.js';
 import { userRepository } from '../repositories/user.repository.js';
-import { telegramOtpService } from './telegram-otp.service.js';
-import { prisma } from '../config/prisma.js';
+import { magicLinkService } from './magic-link.service.js';
+import { emailService } from './email.service.js';
 
 function sanitizeUser(user: {
   id: string;
@@ -14,9 +14,6 @@ function sanitizeUser(user: {
   createdAt: Date;
   updatedAt?: Date;
   profile?: unknown;
-  telegramChatId?: string | null;
-  telegramUsername?: string | null;
-  telegram2faEnabled?: boolean;
   passwordHash?: string;
   [key: string]: unknown;
 }) {
@@ -31,33 +28,10 @@ function issueToken(user: {
   status: string;
   createdAt: Date;
   profile?: unknown;
-  telegramChatId?: string | null;
-  telegramUsername?: string | null;
-  telegram2faEnabled?: boolean;
   passwordHash?: string;
 }) {
   const token = signToken({ id: user.id, email: user.email, role: user.role });
   return { user: sanitizeUser(user), token };
-}
-
-async function sendLoginCode(user: {
-  id: string;
-  email: string;
-  telegramChatId: string | null;
-}) {
-  if (!user.telegramChatId) {
-    throw new ValidationError(
-      'Включена 2FA, но Telegram не привязан. Откройте «Настройки → Telegram».',
-    );
-  }
-
-  const challenge = await telegramOtpService.issueChallenge(user.id, user.telegramChatId, user.email);
-  return {
-    requiresTelegram: true as const,
-    challengeId: challenge.challengeId,
-    expiresAt: challenge.expiresAt,
-    message: 'Введите 4-значный код, отправленный вам в Telegram',
-  };
 }
 
 export const authService = {
@@ -68,29 +42,24 @@ export const authService = {
     lastName: string;
     role?: 'STUDENT';
   }) {
-    const existing = await userRepository.findByEmail(input.email);
+    const email = input.email.toLowerCase();
+    const existing = await userRepository.findByEmail(email);
     if (existing) throw new ConflictError('Email already registered');
 
     const passwordHash = await bcrypt.hash(input.password, 10);
     const user = await userRepository.create({
-      email: input.email.toLowerCase(),
+      email,
       passwordHash,
       role: 'STUDENT',
       firstName: input.firstName,
       lastName: input.lastName,
     });
 
-    if (telegramOtpService.isEnabled()) {
-      const link = await telegramOtpService.createLinkToken(user.id);
-      return {
-        requiresTelegramLink: true as const,
-        linkUrl: link.url,
-        linkToken: link.token,
-        message: 'Откройте Telegram-бота, нажмите Start. Код придёт в ваш чат с ботом.',
-      };
+    if (!emailService.isConfigured()) {
+      throw new ConflictError('Отправка email не настроена на сервере');
     }
 
-    return issueToken(user);
+    return magicLinkService.sendForUser(user.id, user.email);
   },
 
   async login(email: string, password: string) {
@@ -101,47 +70,53 @@ export const authService = {
     const valid = await bcrypt.compare(password, user.passwordHash);
     if (!valid) throw new UnauthorizedError('Invalid credentials');
 
-    const needs2fa = telegramOtpService.isEnabled() && user.telegram2faEnabled;
-
-    if (needs2fa) {
-      return sendLoginCode(user);
-    }
-
     return issueToken(user);
   },
 
-  async continueAfterTelegramLink(linkToken: string) {
-    const raw = linkToken.replace(/^link_/, '');
-    const link = await prisma.telegramLinkToken.findUnique({ where: { token: raw } });
-    if (!link || link.expiresAt < new Date()) {
-      throw new UnauthorizedError('Ссылка привязки истекла. Создайте новую в настройках.');
+  async changePassword(userId: string, currentPassword: string, newPassword: string) {
+    const user = await userRepository.findById(userId);
+    if (!user) throw new UnauthorizedError();
+
+    const valid = await bcrypt.compare(currentPassword, user.passwordHash);
+    if (!valid) throw new ValidationError('Неверный текущий пароль');
+
+    if (currentPassword === newPassword) {
+      throw new ValidationError('Новый пароль должен отличаться от текущего');
     }
 
-    const user = await prisma.user.findUnique({ where: { id: link.userId } });
-    if (!user) throw new UnauthorizedError('User not found');
+    const passwordHash = await bcrypt.hash(newPassword, 10);
+    await userRepository.update(userId, { passwordHash });
+    return { message: 'Пароль обновлён' };
+  },
 
-    if (!user.telegramChatId) {
-      return {
-        linked: false as const,
-        message: 'Telegram ещё не привязан. Нажмите Start в боте.',
-      };
+  async requestMagicLink(email: string) {
+    if (!emailService.isConfigured()) {
+      throw new ConflictError('Отправка email не настроена на сервере');
     }
 
-    const existing = await telegramOtpService.getOpenChallenge(user.id);
-    const challenge =
-      existing ??
-      (await telegramOtpService.issueChallenge(user.id, user.telegramChatId, user.email));
+    const user = await userRepository.findByEmail(email.toLowerCase());
+    const generic = {
+      message: 'Если аккаунт существует, мы отправили код для входа',
+    };
+
+    if (!user || user.status === 'BLOCKED') {
+      return generic;
+    }
+
+    const sent = await magicLinkService.sendForUser(user.id, user.email);
     return {
-      requiresTelegram: true as const,
-      linked: true as const,
-      challengeId: challenge.challengeId,
-      expiresAt: challenge.expiresAt,
-      message: 'Введите 4-значный код, отправленный вам в Telegram',
+      ...generic,
+      delivered: sent.delivered,
     };
   },
 
-  async verifyTelegram(challengeId: string, code: string) {
-    const user = await telegramOtpService.verifyChallenge(challengeId, code);
+  async verifyMagicLink(token: string) {
+    const user = await magicLinkService.verify(token);
+    return issueToken(user);
+  },
+
+  async verifyEmailOtp(email: string, code: string) {
+    const user = await magicLinkService.verifyOtp(email, code);
     return issueToken(user);
   },
 
@@ -149,21 +124,5 @@ export const authService = {
     const user = await userRepository.findById(userId);
     if (!user) throw new UnauthorizedError();
     return sanitizeUser(user);
-  },
-
-  createTelegramLink(userId: string) {
-    return telegramOtpService.createLinkToken(userId);
-  },
-
-  telegramStatus(userId: string) {
-    return telegramOtpService.getStatus(userId);
-  },
-
-  setTelegram2fa(userId: string, enabled: boolean) {
-    return telegramOtpService.set2fa(userId, enabled);
-  },
-
-  unlinkTelegram(userId: string) {
-    return telegramOtpService.unlink(userId);
   },
 };

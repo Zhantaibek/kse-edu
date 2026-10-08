@@ -25,12 +25,8 @@ export function PaymentsPage() {
   const isStudent = user?.role === 'STUDENT';
 
   useEffect(() => {
-    if (!isAdmin && !isStudent) {
-      setLoading(false);
-      setItems([]);
-      return;
-    }
-    setLoading(true);
+    // Раздел открыт только админу и студенту (см. маршруты); при смене фильтра прежний список виден до ответа.
+    if (!isAdmin && !isStudent) return;
     const endpoint = isAdmin ? '/payments' : '/payments/mine';
     api
       .get(endpoint, {
@@ -53,12 +49,12 @@ export function PaymentsPage() {
   }, [items]);
 
   return (
-    <div>
+    <div className={isStudent ? 'mx-auto max-w-6xl px-4 py-8 sm:px-6' : undefined}>
       <PageHeader
-        title="Оплаты"
+        title={isStudent ? 'Заказы и прогресс' : 'Оплаты'}
         description={
           isStudent
-            ? 'История тестовых платежей. Оплата — на странице курса.'
+            ? 'Информация о ваших оплатах и доступе к курсам'
             : 'Транзакции и статусы платежей'
         }
       />

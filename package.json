@@ -10,15 +10,15 @@
     "build": "npm run build --prefix backend && npm run build --prefix frontend",
     "build:backend": "npm run build --prefix backend",
     "build:frontend": "npm run build --prefix frontend",
-    "db:up": "docker compose -f ../kse-kg/docker-compose.yml up -d postgres",
-    "db:ensure": "node scripts/ensure-edu-db.mjs",
-    "db:down": "echo \"Shared Postgres: stop from kse-kg with npm run db:down\"",
+    "db:up": "docker compose up -d postgres",
+    "db:down": "docker compose stop postgres",
     "db:migrate": "npm run prisma:migrate --prefix backend",
     "db:push": "npm run prisma:push --prefix backend",
     "db:seed": "npm run prisma:seed --prefix backend",
-    "db:setup": "npm run db:up && npm run db:ensure && npm run db:push && npm run db:seed",
+    "db:setup": "npm run db:deploy && npm run db:seed",
     "docker:up": "npm run db:up",
-    "docker:full": "docker compose up --build"
+    "docker:full": "docker compose up --build",
+    "db:deploy": "npm run prisma:deploy --prefix backend"
   },
   "devDependencies": {
     "concurrently": "^10.0.5"

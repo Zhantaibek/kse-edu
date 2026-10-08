@@ -1,9 +1,10 @@
 import axios from 'axios';
 import { useAuthStore } from '../store/authStore';
 import { getEmbedConfig } from '../embed/runtime';
+import { EDU_API_URL } from '../config';
 
 const api = axios.create({
-  baseURL: import.meta.env.VITE_API_URL || 'http://localhost:4100/api',
+  baseURL: EDU_API_URL,
   headers: { 'Content-Type': 'application/json' },
 });
 
@@ -18,7 +19,12 @@ api.interceptors.request.use((config) => {
   }
   // Иначе FormData уходит как JSON и multer не видит файл
   if (typeof FormData !== 'undefined' && config.data instanceof FormData) {
-    delete config.headers['Content-Type'];
+    const headers = config.headers as { delete?: (name: string) => void };
+    if (typeof headers.delete === 'function') {
+      headers.delete('Content-Type');
+    } else {
+      delete config.headers['Content-Type'];
+    }
   }
   return config;
 });
@@ -31,6 +37,8 @@ api.interceptors.response.use(
       const isAuthChallenge =
         url.includes('/auth/login') ||
         url.includes('/auth/register') ||
+        url.includes('/auth/verify-otp') ||
+        url.includes('/auth/verify-magic-link') ||
         url.includes('/auth/verify-telegram') ||
         url.includes('/auth/telegram/continue');
 

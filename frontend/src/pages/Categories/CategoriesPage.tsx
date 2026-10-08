@@ -13,18 +13,15 @@ export function CategoriesPage() {
   const [description, setDescription] = useState('');
   const [loading, setLoading] = useState(true);
 
-  const load = async () => {
-    setLoading(true);
-    try {
-      const { data } = await api.get('/categories');
-      setItems(data.data);
-    } finally {
-      setLoading(false);
-    }
-  };
+  // Состояние меняем только когда пришёл ответ: при перезагрузке список остаётся на экране.
+  const load = () =>
+    api
+      .get('/categories')
+      .then(({ data }) => setItems(data.data))
+      .finally(() => setLoading(false));
 
   useEffect(() => {
-    load();
+    void load();
   }, []);
 
   const create = async () => {

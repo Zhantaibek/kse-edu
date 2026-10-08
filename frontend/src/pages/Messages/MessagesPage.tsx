@@ -56,37 +56,38 @@ export function MessagesPage() {
     setShowNew(false);
   };
 
-  const loadThread = async (conversationId: string, soft = false) => {
+  // Состояние обновляем в колбэках ответа: soft — догрузка новых сообщений при опросе раз в 3 секунды.
+  const loadThread = (conversationId: string, soft = false): Promise<void> => {
     if (!soft) {
-      const { data } = await api.get(`/messages/conversations/${conversationId}`);
-      setActive(data.data);
-      setMessages(data.data.messages ?? []);
-      lastIdRef.current = data.data.messages?.at(-1)?.id ?? null;
-      void loadConversations();
-      return;
+      return api.get(`/messages/conversations/${conversationId}`).then(({ data }) => {
+        setActive(data.data);
+        setMessages(data.data.messages ?? []);
+        lastIdRef.current = data.data.messages?.at(-1)?.id ?? null;
+        void loadConversations();
+      });
     }
     const after = lastIdRef.current;
-    const { data } = await api.get(`/messages/conversations/${conversationId}/messages`, {
-      params: after ? { after } : undefined,
-    });
-    const incoming = data.data as ChatMessage[];
-    if (incoming.length) {
-      setMessages((prev) => {
-        const known = new Set(prev.map((m) => m.id));
-        const next = [...prev];
-        for (const m of incoming) {
-          if (!known.has(m.id)) next.push(m);
-        }
-        return next;
+    return api
+      .get(`/messages/conversations/${conversationId}/messages`, { params: after ? { after } : undefined })
+      .then(({ data }) => {
+        const incoming = data.data as ChatMessage[];
+        if (!incoming.length) return;
+        setMessages((prev) => {
+          const known = new Set(prev.map((m) => m.id));
+          const next = [...prev];
+          for (const m of incoming) {
+            if (!known.has(m.id)) next.push(m);
+          }
+          return next;
+        });
+        lastIdRef.current = incoming[incoming.length - 1]?.id ?? lastIdRef.current;
+        void loadConversations();
       });
-      lastIdRef.current = incoming[incoming.length - 1]?.id ?? lastIdRef.current;
-      void loadConversations();
-    }
   };
 
   useEffect(() => {
+    // loading изначально true — включать его здесь не нужно.
     const boot = async () => {
-      setLoading(true);
       try {
         await Promise.all([loadConversations(), loadContacts()]);
         const courseId = searchParams.get('courseId');
@@ -104,10 +105,18 @@ export function MessagesPage() {
     void boot();
   }, []);
 
-  useEffect(() => {
+  // Закрыли диалог (в адресе нет id) — очищаем его прямо в рендере, без лишнего прохода эффекта.
+  const [threadFor, setThreadFor] = useState(id);
+  if (threadFor !== id) {
+    setThreadFor(id);
     if (!id) {
       setActive(null);
       setMessages([]);
+    }
+  }
+
+  useEffect(() => {
+    if (!id) {
       lastIdRef.current = null;
       return;
     }
@@ -148,7 +157,13 @@ export function MessagesPage() {
   if (loading) return <Skeleton className="h-[70vh]" />;
 
   return (
-    <div className="-mx-4 -my-6 flex h-[calc(100vh-4rem)] flex-col sm:-mx-6 lg:-mx-8">
+    <div
+      className={
+        user?.role === 'STUDENT'
+          ? 'flex h-[calc(100vh-3.5rem)] flex-col'
+          : '-mx-4 -my-6 flex h-[calc(100vh-4rem)] flex-col sm:-mx-6 lg:-mx-8'
+      }
+    >
       <div className="border-b border-kse-border px-4 py-3 dark:border-border-dark sm:px-6">
         <PageHeader
           title="Сообщения"

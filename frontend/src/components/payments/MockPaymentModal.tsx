@@ -96,7 +96,13 @@ function formatTimer(sec: number) {
   return `${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}`;
 }
 
-export function MockPaymentModal({ course, open, onClose, onSuccess }: MockPaymentModalProps) {
+/** Закрытая модалка ничего не рисует; при каждом открытии форма монтируется заново — со свежими значениями. */
+export function MockPaymentModal(props: MockPaymentModalProps) {
+  if (!props.open) return null;
+  return <PaymentCheckout {...props} />;
+}
+
+function PaymentCheckout({ course, open, onClose, onSuccess }: MockPaymentModalProps) {
   const [method, setMethod] = useState<PayMethod>('CARD');
   const [step, setStep] = useState<Step>('checkout');
   const [processMsg, setProcessMsg] = useState(PROCESS_STEPS[0]);
@@ -107,7 +113,7 @@ export function MockPaymentModal({ course, open, onClose, onSuccess }: MockPayme
   const [holder, setHolder] = useState('TEST USER');
   const [saveCard, setSaveCard] = useState(true);
   const [payment, setPayment] = useState<Payment | null>(null);
-  const [txId, setTxId] = useState('');
+  const [txId] = useState(() => `txn_${Math.random().toString(36).slice(2, 12)}`);
   const [qrSeconds, setQrSeconds] = useState(10 * 60);
 
   const amount = Number(course.price);
@@ -136,21 +142,6 @@ export function MockPaymentModal({ course, open, onClose, onSuccess }: MockPayme
   );
 
   useEffect(() => {
-    if (!open) return;
-    setStep('checkout');
-    setPayment(null);
-    setMethod('CARD');
-    setProcessMsg(PROCESS_STEPS[0]);
-    setCardNumber('4242 4242 4242 4242');
-    setExpiry('12/28');
-    setCvc('123');
-    setHolder('TEST USER');
-    setSaveCard(true);
-    setTxId(`txn_${Math.random().toString(36).slice(2, 12)}`);
-    setQrSeconds(10 * 60);
-  }, [open]);
-
-  useEffect(() => {
     if (!open || method !== 'QR' || step !== 'checkout') return;
     const id = window.setInterval(() => {
       setQrSeconds((s) => (s > 0 ? s - 1 : 0));
@@ -173,7 +164,6 @@ export function MockPaymentModal({ course, open, onClose, onSuccess }: MockPayme
     return () => window.removeEventListener('keydown', onKey);
   }, [open, onClose, step]);
 
-  if (!open) return null;
 
   const validate = () => {
     if (!email.includes('@')) {
@@ -393,7 +383,7 @@ export function MockPaymentModal({ course, open, onClose, onSuccess }: MockPayme
                   {method === 'CARD' && (
                     <>
                       {/* Live card */}
-                      <div className="checkout-card relative overflow-hidden rounded-2xl bg-gradient-to-br from-[#1a2a2e] via-[#2d6875] to-[#51adba] p-5 text-white shadow-lg">
+                      <div className="checkout-card relative overflow-hidden rounded-kse bg-gradient-to-br from-[#0e3339] via-[#1a6d7a] to-[#4eacb9] p-5 text-white shadow-lg">
                         <div className="pointer-events-none absolute -right-8 -top-10 h-40 w-40 rounded-full bg-white/10 blur-2xl" />
                         <div className="pointer-events-none absolute -bottom-10 left-10 h-32 w-32 rounded-full bg-brand-300/20 blur-2xl" />
                         <div className="relative flex items-start justify-between">
@@ -514,7 +504,7 @@ export function MockPaymentModal({ course, open, onClose, onSuccess }: MockPayme
                             level="M"
                             includeMargin={false}
                             bgColor="#ffffff"
-                            fgColor="#1e2c32"
+                            fgColor="#102428"
                           />
                         </div>
                         <div className="mt-3 text-center">

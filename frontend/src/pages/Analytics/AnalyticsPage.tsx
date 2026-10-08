@@ -4,7 +4,7 @@ import api from '../../services/api';
 import { PageHeader, Card, Skeleton } from '../../components/ui/Card';
 import { statusLabel } from '../../utils';
 
-const COLORS = ['#51adba', '#348191', '#7dd0d9', '#2d6875'];
+const COLORS = ['#4eacb9', '#1a6d7a', '#76c3ce', '#0e3339'];
 
 export function AnalyticsPage() {
   const [students, setStudents] = useState<Array<{ month: string; count: number }>>([]);
@@ -41,7 +41,7 @@ export function AnalyticsPage() {
                 <XAxis dataKey="month" tick={{ fontSize: 12 }} />
                 <YAxis tick={{ fontSize: 12 }} />
                 <Tooltip />
-                <Bar dataKey="count" fill="#51adba" radius={[8, 8, 0, 0]} />
+                <Bar dataKey="count" fill="#4eacb9" radius={[8, 8, 0, 0]} />
               </BarChart>
             </ResponsiveContainer>
           </div>

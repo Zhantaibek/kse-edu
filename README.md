@@ -1,6 +1,7 @@
 # Учебный центр КФБ (Educational CRM)
 
-Отдельный проект (`Desktop/kse-edu`). Сайт КФБ (`kse-kg`) ссылается сюда через `NEXT_PUBLIC_EDU_URL`.
+Отдельный проект: свой фронтенд (React + Vite), API (Express + Prisma), база и вход.
+Сайт КФБ ([kfb](https://github.com/Zhantaibek/kfb)) только ссылается сюда через `NEXT_PUBLIC_EDU_URL`.
 
 ## Порты
 
@@ -8,14 +9,14 @@
 |--------|------|
 | Vite (dev) | 5173 |
 | Backend API | 4100 |
-| PostgreSQL | **5433** (общий контейнер `kse-postgres` из `kse-kg`, БД `education_crm`) |
+| PostgreSQL | **5433** — локальный сервер, база `kse_edu` (схема `edu`); в Docker — свой контейнер на **5434** |
 
 Открытие: **http://127.0.0.1:5173/education/app/**  
 API: **http://127.0.0.1:4100/api**
 
 ## Быстрый старт
 
-Нужен **Docker Desktop**. Postgres поднимается из соседнего `kse-kg`.
+Нужен PostgreSQL: локальный на `:5433` или свой контейнер (`npm run db:up`, порт `:5434` — поправьте `DATABASE_URL`).
 
 ```bash
 cd Desktop/kse-edu
@@ -26,7 +27,9 @@ npm run db:setup
 npm run dev
 ```
 
-Подключение к БД: `postgresql://kse:kse@localhost:5433/education_crm`
+Подключение к БД: `postgresql://kse:kse@localhost:5433/kse_edu?schema=edu`
+
+`npm run db:setup` применяет миграции и заполняет демо-данные (база создаётся сама, если её нет).
 
 В `frontend/.env`:
 

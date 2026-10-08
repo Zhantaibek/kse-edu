@@ -2,7 +2,7 @@ import { z } from 'zod';
 
 export const registerSchema = z.object({
   email: z.string().email(),
-  password: z.string().min(8),
+  password: z.string().min(8, 'Пароль не менее 8 символов'),
   firstName: z.string().min(1),
   lastName: z.string().min(1),
   role: z.literal('STUDENT').optional().default('STUDENT'),
@@ -13,17 +13,22 @@ export const loginSchema = z.object({
   password: z.string().min(1),
 });
 
-export const verifyTelegramSchema = z.object({
-  challengeId: z.string().min(1),
-  code: z.string().regex(/^\d{4}$/, 'Код должен быть из 4 цифр'),
+export const magicLinkRequestSchema = z.object({
+  email: z.string().email(),
 });
 
-export const continueTelegramLinkSchema = z.object({
-  linkToken: z.string().min(8),
+export const verifyMagicLinkSchema = z.object({
+  token: z.string().min(16),
 });
 
-export const telegram2faSchema = z.object({
-  enabled: z.boolean(),
+export const verifyEmailOtpSchema = z.object({
+  email: z.string().email(),
+  code: z.string().regex(/^\d{6}$/, 'Код из 6 цифр'),
+});
+
+export const changePasswordSchema = z.object({
+  currentPassword: z.string().min(1),
+  newPassword: z.string().min(8, 'Пароль не менее 8 символов'),
 });
 
 export const paginationSchema = z.object({
@@ -94,18 +99,47 @@ export const createModuleSchema = z.object({
 export const updateModuleSchema = createModuleSchema.partial();
 
 export const createLessonSchema = z.object({
-  moduleId: z.string().min(1),
+  moduleId: z.string().min(1).optional(),
   title: z.string().min(2),
   contentType: z.enum(['VIDEO', 'TEXT', 'PDF', 'LINK', 'ASSIGNMENT', 'IMAGE']).optional(),
   content: z.string().optional(),
   videoUrl: z.string().min(1).optional().nullable(),
   fileUrl: z.string().min(1).optional().nullable(),
   linkUrl: z.string().min(1).optional().nullable(),
+  videoUrls: z.array(z.string().min(1)).optional(),
+  imageUrls: z.array(z.string().min(1)).optional(),
   durationMin: z.coerce.number().int().nonnegative().optional(),
   order: z.coerce.number().int().positive().optional(),
 });
 
+export const createVideoSchema = z
+  .object({
+    title: z.string().min(2),
+    description: z.string().optional(),
+    videoUrl: z.string().min(1).optional(),
+    videoUrls: z.array(z.string().min(1)).optional(),
+    imageUrls: z.array(z.string().min(1)).optional(),
+    order: z.coerce.number().int().positive().optional(),
+  })
+  .refine((d) => Boolean(d.videoUrl) || Boolean(d.videoUrls?.length) || Boolean(d.imageUrls?.length), {
+    message: 'Добавьте видео или фото',
+  });
+
+export const updateVideoSchema = z.object({
+  title: z.string().min(2).optional(),
+  description: z.string().optional(),
+  videoUrl: z.string().min(1).optional().nullable(),
+  videoUrls: z.array(z.string().min(1)).optional(),
+  imageUrls: z.array(z.string().min(1)).optional(),
+  order: z.coerce.number().int().positive().optional(),
+});
+
 export const updateLessonSchema = createLessonSchema.partial().omit({ moduleId: true });
+
+export const generateAssignmentSchema = z.object({
+  topic: z.string().optional().default(''),
+  program: z.string().optional().default(''),
+});
 
 export const createAssignmentSchema = z.object({
   courseId: z.string().min(1),

@@ -19,21 +19,20 @@ export function StudentsPage() {
   const status = params.get('status') ?? '';
   const page = Number(params.get('page') ?? 1);
 
-  const load = async () => {
-    setLoading(true);
-    try {
-      const { data } = await api.get('/students', {
+  // Состояние меняем только когда пришёл ответ: при смене фильтра список остаётся на экране.
+  const load = () =>
+    api
+      .get('/students', {
         params: { search: search || undefined, status: status || undefined, page, limit: 10, sortBy: 'createdAt', sortOrder: 'desc' },
-      });
-      setItems(data.data);
-      setMeta(data.meta);
-    } finally {
-      setLoading(false);
-    }
-  };
+      })
+      .then(({ data }) => {
+        setItems(data.data);
+        setMeta(data.meta);
+      })
+      .finally(() => setLoading(false));
 
   useEffect(() => {
-    load();
+    void load();
   }, [search, status, page]);
 
   const block = async (id: string) => {

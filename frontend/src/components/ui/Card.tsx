@@ -8,7 +8,7 @@ export function Card({
   return (
     <div
       className={cn(
-        'rounded-2xl border border-kse-border bg-panel shadow-[0_1px_2px_rgba(81,173,186,0.07)] dark:bg-panel-dark dark:border-border-dark',
+        'rounded-kse border border-[var(--card-border)] bg-panel/92 shadow-[var(--shadow)] backdrop-blur-sm dark:bg-panel-dark/88 dark:border-border-dark',
         className,
       )}
     >
@@ -29,7 +29,7 @@ export function Badge({
     teal: 'bg-brand-50 text-brand-700 dark:bg-brand-800/40 dark:text-brand-200',
   };
   return (
-    <span className={cn('inline-flex items-center rounded-lg px-2 py-0.5 text-xs font-semibold tracking-wide', tones[tone])}>
+    <span className={cn('inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-semibold tracking-wide', tones[tone])}>
       {children}
     </span>
   );
@@ -84,7 +84,7 @@ export function PageHeader({
   return (
     <div className="mb-7 flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
       <div className="animate-fade-up">
-        <h1 className="font-display text-3xl font-bold tracking-tight text-ink dark:text-white">{title}</h1>
+        <h1 className="font-display text-3xl font-semibold tracking-[-0.045em] text-ink dark:text-white">{title}</h1>
         {description && <p className="mt-1.5 text-sm text-kse-muted dark:text-kse-gray">{description}</p>}
       </div>
       {actions && <div className="animate-fade-up-delay">{actions}</div>}

@@ -1,6 +1,5 @@
 import { Router } from 'express';
 import authRoutes from './auth.routes.js';
-import telegramRoutes from './telegram.routes.js';
 import { studentsRouter, teachersRouter } from './user.routes.js';
 import {
   categoriesRouter,
@@ -21,7 +20,6 @@ import { messagesRouter } from './chat.routes.js';
 const router = Router();
 
 router.use('/auth', authRoutes);
-router.use('/telegram', telegramRoutes);
 router.use('/media', mediaRoutes);
 router.use('/students', studentsRouter);
 router.use('/teachers', teachersRouter);

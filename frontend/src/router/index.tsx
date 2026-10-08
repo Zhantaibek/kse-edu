@@ -4,6 +4,7 @@ import { ProtectedRoute } from './ProtectedRoute';
 import { LandingPage } from '../pages/Landing/LandingPage';
 import { LoginPage } from '../pages/Auth/LoginPage';
 import { RegisterPage } from '../pages/Auth/RegisterPage';
+import { MagicLinkVerifyPage } from '../pages/Auth/MagicLinkVerifyPage';
 import { DashboardPage } from '../pages/Dashboard/DashboardPage';
 import { StudentsPage, StudentDetailPage } from '../pages/Students/StudentsPage';
 import { TeachersPage } from '../pages/Teachers/TeachersPage';
@@ -54,6 +55,7 @@ export function AppRouter() {
             </PublicOnly>
           }
         />
+        <Route path="/auth/verify" element={<MagicLinkVerifyPage />} />
 
         <Route element={<ProtectedRoute />}>
           <Route element={<AppLayout />}>

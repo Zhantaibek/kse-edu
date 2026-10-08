@@ -1,5 +1,6 @@
 import type { Request, Response } from 'express';
 import { assignmentService } from '../services/assignment.service.js';
+import { methodistService } from '../services/methodist.service.js';
 import {
   analyticsService,
   notificationService,
@@ -15,7 +16,7 @@ export const assignmentController = {
   }),
 
   get: asyncHandler(async (req: Request, res: Response) => {
-    const assignment = await assignmentService.getById(req.params.id, req.user!);
+    const assignment = await assignmentService.getById(String(req.params.id), req.user!);
     return sendSuccess(res, assignment);
   }),
 
@@ -25,18 +26,23 @@ export const assignmentController = {
   }),
 
   update: asyncHandler(async (req: Request, res: Response) => {
-    const assignment = await assignmentService.update(req.params.id, req.body, req.user!);
+    const assignment = await assignmentService.update(String(req.params.id), req.body, req.user!);
     return sendSuccess(res, assignment);
   }),
 
   submit: asyncHandler(async (req: Request, res: Response) => {
-    const submission = await assignmentService.submit(req.params.id, req.user!.id, req.body);
+    const submission = await assignmentService.submit(String(req.params.id), req.user!.id, req.body);
     return sendSuccess(res, submission, 201);
   }),
 
   review: asyncHandler(async (req: Request, res: Response) => {
-    const submission = await assignmentService.review(req.params.submissionId, req.body, req.user!);
+    const submission = await assignmentService.review(String(req.params.submissionId), req.body, req.user!);
     return sendSuccess(res, submission);
+  }),
+
+  generate: asyncHandler(async (req: Request, res: Response) => {
+    const result = methodistService.generate(req.body);
+    return sendSuccess(res, result);
   }),
 };
 
@@ -64,7 +70,7 @@ export const notificationController = {
   }),
 
   markRead: asyncHandler(async (req: Request, res: Response) => {
-    const result = await notificationService.markRead(req.params.id, req.user!.id);
+    const result = await notificationService.markRead(String(req.params.id), req.user!.id);
     return sendSuccess(res, result);
   }),
 

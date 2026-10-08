@@ -10,6 +10,7 @@ import { validate } from '../middleware/validate.js';
 import {
   createAssignmentSchema,
   createPaymentSchema,
+  generateAssignmentSchema,
   paginationSchema,
   reviewSubmissionSchema,
   submitAssignmentSchema,
@@ -23,6 +24,7 @@ const analyticsRouter = Router();
 
 assignmentsRouter.use(authenticate);
 assignmentsRouter.get('/', validate(paginationSchema, 'query'), assignmentController.list);
+assignmentsRouter.post('/generate', authorize('ADMIN', 'TEACHER'), validate(generateAssignmentSchema), assignmentController.generate);
 assignmentsRouter.get('/:id', assignmentController.get);
 assignmentsRouter.post('/', authorize('ADMIN', 'TEACHER'), validate(createAssignmentSchema), assignmentController.create);
 assignmentsRouter.patch('/:id', authorize('ADMIN', 'TEACHER'), validate(updateAssignmentSchema), assignmentController.update);

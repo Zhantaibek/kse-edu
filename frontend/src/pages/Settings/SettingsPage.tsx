@@ -1,42 +1,36 @@
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useRef, useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { z } from 'zod';
-import { zodResolver } from '@hookform/resolvers/zod';
+import { zodResolver } from '../../utils/zodResolver';
 import toast from 'react-hot-toast';
 import api from '../../services/api';
 import { useAuthStore } from '../../store/authStore';
 import { PageHeader, Card, Avatar } from '../../components/ui/Card';
 import { Button } from '../../components/ui/Button';
-import { Input, Textarea } from '../../components/ui/Input';
+import { Input, PasswordInput, Textarea } from '../../components/ui/Input';
 import { fullName, getErrorMessage } from '../../utils';
 
-type TelegramStatus = {
-  linked: boolean;
-  username: string | null;
-  botUsername: string | null;
-  featureAvailable: boolean;
-  twoFactorEnabled: boolean;
-};
+const passwordSchema = z
+  .object({
+    currentPassword: z.string().min(1, 'Введите текущий пароль'),
+    newPassword: z.string().min(8, 'Новый пароль не менее 8 символов'),
+    confirmPassword: z.string().min(1, 'Повторите новый пароль'),
+  })
+  .refine((v) => v.newPassword === v.confirmPassword, {
+    message: 'Пароли не совпадают',
+    path: ['confirmPassword'],
+  })
+  .refine((v) => v.currentPassword !== v.newPassword, {
+    message: 'Новый пароль должен отличаться от текущего',
+    path: ['newPassword'],
+  });
 
-const codeSchema = z.object({
-  code: z.string().regex(/^\d{4}$/, 'Введите 4 цифры из Telegram'),
-});
-
-type CodeValues = z.infer<typeof codeSchema>;
+type PasswordForm = z.infer<typeof passwordSchema>;
 
 export function SettingsPage() {
   const user = useAuthStore((s) => s.user);
   const fetchMe = useAuthStore((s) => s.fetchMe);
-  const continueTelegramLink = useAuthStore((s) => s.continueTelegramLink);
-  const verifyTelegram = useAuthStore((s) => s.verifyTelegram);
-
-  const [tg, setTg] = useState<TelegramStatus | null>(null);
-  const [linkUrl, setLinkUrl] = useState<string | null>(null);
-  const [linkToken, setLinkToken] = useState<string | null>(null);
-  const [challengeId, setChallengeId] = useState<string | null>(null);
-  const [modalOpen, setModalOpen] = useState(false);
-  const [step, setStep] = useState<'link' | 'code'>('link');
-  const [tgBusy, setTgBusy] = useState(false);
+  const isStudent = user?.role === 'STUDENT';
   const [uploadingAvatar, setUploadingAvatar] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -50,50 +44,16 @@ export function SettingsPage() {
     },
   });
 
-  const avatarUrl = form.watch('avatarUrl');
-
-  const codeForm = useForm<CodeValues>({
-    resolver: zodResolver(codeSchema),
-    defaultValues: { code: '' },
+  const passwordForm = useForm<PasswordForm>({
+    resolver: zodResolver(passwordSchema),
+    defaultValues: {
+      currentPassword: '',
+      newPassword: '',
+      confirmPassword: '',
+    },
   });
 
-  const loadTelegram = useCallback(async () => {
-    try {
-      const { data } = await api.get('/auth/telegram/status');
-      setTg(data.data);
-    } catch {
-      setTg(null);
-    }
-  }, []);
-
-  useEffect(() => {
-    void loadTelegram();
-  }, [loadTelegram]);
-
-  useEffect(() => {
-    if (modalOpen && step === 'code') {
-      codeForm.reset({ code: '' });
-    }
-  }, [codeForm, modalOpen, step]);
-
-  useEffect(() => {
-    if (!modalOpen || step !== 'link' || !linkToken) return;
-    const timer = window.setInterval(() => {
-      void (async () => {
-        try {
-          const result = await continueTelegramLink(linkToken);
-          if (result.requiresTelegram && result.challengeId) {
-            setChallengeId(result.challengeId);
-            setStep('code');
-            toast.success('Код отправлен в ваш Telegram');
-          }
-        } catch {
-          // ссылка ещё не использована — ждём Start
-        }
-      })();
-    }, 2000);
-    return () => window.clearInterval(timer);
-  }, [continueTelegramLink, linkToken, modalOpen, step]);
+  const avatarUrl = form.watch('avatarUrl');
 
   const onSubmit = async (values: {
     firstName: string;
@@ -110,6 +70,19 @@ export function SettingsPage() {
       });
       await fetchMe();
       toast.success('Профиль обновлён');
+    } catch (e) {
+      toast.error(getErrorMessage(e));
+    }
+  };
+
+  const onChangePassword = async (values: PasswordForm) => {
+    try {
+      await api.post('/auth/change-password', {
+        currentPassword: values.currentPassword,
+        newPassword: values.newPassword,
+      });
+      passwordForm.reset();
+      toast.success('Пароль изменён');
     } catch (e) {
       toast.error(getErrorMessage(e));
     }
@@ -151,101 +124,14 @@ export function SettingsPage() {
     }
   };
 
-  const closeLinkModal = () => {
-    setModalOpen(false);
-    setStep('link');
-    setChallengeId(null);
-  };
-
-  const createLink = async () => {
-    setTgBusy(true);
-    try {
-      const { data } = await api.post('/auth/telegram/link');
-      const url = String(data.data.url);
-      const token = String(data.data.token);
-      setLinkUrl(url);
-      setLinkToken(token);
-      setChallengeId(null);
-      setStep('link');
-      setModalOpen(true);
-      window.open(url, '_blank', 'noopener,noreferrer');
-      toast.success('Откройте бота и нажмите Start');
-    } catch (e) {
-      toast.error(getErrorMessage(e));
-    } finally {
-      setTgBusy(false);
-    }
-  };
-
-  const onContinueLink = async () => {
-    if (!linkToken) return;
-    try {
-      const result = await continueTelegramLink(linkToken);
-      if (result.requiresTelegram && result.challengeId) {
-        setChallengeId(result.challengeId);
-        setStep('code');
-        toast.success('Код отправлен в Telegram');
-        return;
-      }
-      toast.error(result.message ?? 'Telegram ещё не привязан. Нажмите Start в боте.');
-    } catch (e) {
-      toast.error(getErrorMessage(e));
-    }
-  };
-
-  const onCodeSubmit = async (values: CodeValues) => {
-    if (!challengeId) return;
-    try {
-      await verifyTelegram(challengeId, values.code);
-      closeLinkModal();
-      setLinkUrl(null);
-      setLinkToken(null);
-      await loadTelegram();
-      await fetchMe();
-      toast.success('Telegram привязан');
-    } catch (e) {
-      toast.error(getErrorMessage(e));
-    }
-  };
-
-  const unlink = async () => {
-    setTgBusy(true);
-    try {
-      await api.delete('/auth/telegram/link');
-      setLinkUrl(null);
-      setLinkToken(null);
-      closeLinkModal();
-      await loadTelegram();
-      toast.success('Telegram отвязан');
-    } catch (e) {
-      toast.error(getErrorMessage(e));
-    } finally {
-      setTgBusy(false);
-    }
-  };
-
-  const toggle2fa = async (enabled: boolean) => {
-    setTgBusy(true);
-    try {
-      const { data } = await api.patch('/auth/telegram/2fa', { enabled });
-      setTg((prev) =>
-        prev
-          ? { ...prev, twoFactorEnabled: data.data.twoFactorEnabled }
-          : prev,
-      );
-      toast.success(enabled ? '2FA включена' : '2FA отключена');
-    } catch (e) {
-      toast.error(getErrorMessage(e));
-    } finally {
-      setTgBusy(false);
-    }
-  };
-
   return (
-    <div>
-      <PageHeader title="Настройки" description="Профиль и предпочтения" />
+    <div className={isStudent ? 'mx-auto max-w-6xl px-4 py-8 sm:px-6' : undefined}>
+      <PageHeader title={isStudent ? 'Профиль' : 'Настройки'} description="Профиль и безопасность" />
       <div className="grid max-w-2xl gap-4">
         <Card className="p-6">
+          <p className="mb-4 text-sm text-kse-muted">
+            Email для входа: <span className="font-semibold text-ink dark:text-white">{user?.email}</span>
+          </p>
           <form className="grid gap-4 sm:grid-cols-2" onSubmit={form.handleSubmit(onSubmit)}>
             <div className="sm:col-span-2 flex flex-wrap items-center gap-4">
               <Avatar
@@ -292,132 +178,37 @@ export function SettingsPage() {
         </Card>
 
         <Card className="p-6">
-          <h2 className="font-display text-lg font-bold text-ink dark:text-white">Telegram</h2>
-          <p className="mt-1 text-sm text-kse-muted dark:text-kse-gray">
-            При включённой 2FA код подтверждения входа приходит в Telegram-бота.
+          <h2 className="font-display text-lg font-bold text-ink dark:text-white">Смена пароля</h2>
+          <p className="mt-1 text-sm text-kse-muted">
+            После смены используйте новый пароль при следующем входе.
           </p>
-
-          {tg && (
-            <p className="mt-4 text-sm">
-              Статус:{' '}
-              {tg.linked ? (
-                <span className="font-semibold text-emerald-600">
-                  привязан{tg.username ? ` (@${tg.username})` : ''}
-                </span>
-              ) : (
-                <span className="font-semibold text-amber-600">не привязан</span>
-              )}
-            </p>
-          )}
-
-          {tg?.linked && tg.featureAvailable && (
-            <label className="mt-4 flex cursor-pointer items-start gap-3 rounded-lg border border-kse-border p-4 dark:border-white/10">
-              <input
-                type="checkbox"
-                className="mt-1 h-4 w-4 rounded border-kse-border text-brand-600 focus:ring-brand-500"
-                checked={tg.twoFactorEnabled}
-                disabled={tgBusy}
-                onChange={(e) => void toggle2fa(e.target.checked)}
-              />
-              <span>
-                <span className="block text-sm font-semibold text-ink dark:text-white">
-                  Двухфакторная аутентификация через Telegram
-                </span>
-                <span className="mt-1 block text-sm text-kse-muted dark:text-kse-gray">
-                  При входе потребуется 4-значный код из бота
-                  {tg.botUsername ? ` @${tg.botUsername}` : ''}.
-                </span>
-              </span>
-            </label>
-          )}
-
-          <div className="mt-4 flex flex-wrap gap-2">
-            {!tg?.linked ? (
-              <Button type="button" disabled={tgBusy} onClick={() => void createLink()}>
-                Привязать Telegram
+          <form className="mt-5 grid gap-4" onSubmit={passwordForm.handleSubmit(onChangePassword)}>
+            <PasswordInput
+              label="Текущий пароль"
+              autoComplete="current-password"
+              error={passwordForm.formState.errors.currentPassword?.message}
+              {...passwordForm.register('currentPassword')}
+            />
+            <PasswordInput
+              label="Новый пароль"
+              autoComplete="new-password"
+              error={passwordForm.formState.errors.newPassword?.message}
+              {...passwordForm.register('newPassword')}
+            />
+            <PasswordInput
+              label="Повтор нового пароля"
+              autoComplete="new-password"
+              error={passwordForm.formState.errors.confirmPassword?.message}
+              {...passwordForm.register('confirmPassword')}
+            />
+            <div>
+              <Button type="submit" disabled={passwordForm.formState.isSubmitting}>
+                {passwordForm.formState.isSubmitting ? 'Сохранение…' : 'Изменить пароль'}
               </Button>
-            ) : (
-              <Button type="button" variant="ghost" disabled={tgBusy} onClick={() => void unlink()}>
-                Отвязать
-              </Button>
-            )}
-          </div>
+            </div>
+          </form>
         </Card>
       </div>
-
-      {modalOpen && (
-        <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-slate-900/45 p-4">
-          <div
-            role="dialog"
-            aria-modal="true"
-            className="w-full max-w-sm rounded-2xl bg-white p-6 shadow-2xl dark:bg-panel-dark"
-          >
-            {step === 'link' ? (
-              <>
-                <h2 className="font-display text-xl font-extrabold text-ink dark:text-white">
-                  Привязка Telegram
-                </h2>
-                <p className="mt-3 text-sm leading-relaxed text-kse-muted dark:text-kse-gray">
-                  Откройте <b>вашего</b> Telegram, нажмите <b>Start</b> по ссылке ниже. Бот узнает ваш чат и пришлёт код туда.
-                </p>
-                {linkUrl && (
-                  <a
-                    className="mt-4 block break-all text-sm font-semibold text-brand-600 underline"
-                    href={linkUrl}
-                    target="_blank"
-                    rel="noreferrer"
-                  >
-                    Открыть Telegram-бота
-                  </a>
-                )}
-                <div className="mt-5 space-y-3">
-                  <Button className="w-full" size="lg" onClick={() => void onContinueLink()}>
-                    Я нажал Start
-                  </Button>
-                  <button
-                    type="button"
-                    className="w-full text-sm text-kse-muted hover:text-brand-600"
-                    onClick={closeLinkModal}
-                  >
-                    Закрыть
-                  </button>
-                </div>
-              </>
-            ) : (
-              <>
-                <h2 className="font-display text-xl font-extrabold text-ink dark:text-white">
-                  Подтверждение привязки
-                </h2>
-                <p className="mt-3 text-sm leading-relaxed text-kse-muted dark:text-kse-gray">
-                  Введите <b>4-значный код</b>, отправленный вам в Telegram.
-                </p>
-                <form className="mt-5 space-y-4" onSubmit={codeForm.handleSubmit(onCodeSubmit)}>
-                  <Input
-                    label="Код"
-                    inputMode="numeric"
-                    autoComplete="one-time-code"
-                    maxLength={4}
-                    placeholder="0000"
-                    className="text-center text-2xl tracking-[0.5em]"
-                    error={codeForm.formState.errors.code?.message}
-                    {...codeForm.register('code')}
-                  />
-                  <Button className="w-full" size="lg" disabled={codeForm.formState.isSubmitting}>
-                    {codeForm.formState.isSubmitting ? 'Проверка…' : 'Подтвердить'}
-                  </Button>
-                  <button
-                    type="button"
-                    className="w-full text-sm text-kse-muted hover:text-brand-600"
-                    onClick={closeLinkModal}
-                  >
-                    Отмена
-                  </button>
-                </form>
-              </>
-            )}
-          </div>
-        </div>
-      )}
     </div>
   );
 }
