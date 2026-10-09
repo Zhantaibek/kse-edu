@@ -1,8 +1,29 @@
-import { FormEvent, useState } from 'react';
+import { type CSSProperties, FormEvent, useState } from 'react';
 import { Link } from 'react-router-dom';
 import toast from 'react-hot-toast';
+import {
+  CalendarDays,
+  ChevronDown,
+  ChevronRight,
+  CirclePlay,
+  Clock,
+  FileText,
+  Landmark,
+  Mail,
+  MessageCircle,
+  MonitorPlay,
+  Moon,
+  Phone,
+  Presentation,
+  ShieldCheck,
+  Sun,
+  Users,
+  Video,
+} from 'lucide-react';
 import { BrandLogo } from '../../components/common/BrandLogo';
 import { useAuthStore } from '../../store/authStore';
+import { useUiStore } from '../../store/uiStore';
+import './landing.css';
 
 type TrackId = 'investors' | 'participants' | 'professionals';
 
@@ -120,17 +141,63 @@ const nav = [
   { href: '#contacts', label: 'Контакты' },
 ];
 
-const field =
-  'mt-1 w-full border border-[#14171a] bg-white px-3 py-3 text-[15px] text-[#14171a] outline-none';
+const formatIcons = [CirclePlay, MonitorPlay, Video, Presentation, FileText, Users];
+const reasonIcons = [Landmark, Clock, ShieldCheck];
+
+// Кольца и шарики — тот же фон, что у баннера на главной КФБ.
+const RINGS = [140, 220, 300, 380, 460, 540];
+const ORBS = [
+  { cx: 1070, cy: 120, r: 46, delay: 0 },
+  { cx: 891, cy: 470, r: 30, delay: -4 },
+  { cx: 1500, cy: 420, r: 16, delay: -2 },
+];
+
+function Arrow() {
+  return (
+    <svg viewBox="0 0 16 16" aria-hidden="true">
+      <path d="M3 8h10M9 4l4 4-4 4" />
+    </svg>
+  );
+}
+
+function HeroScene() {
+  return (
+    <svg className="kl-scene" viewBox="0 0 1600 760" preserveAspectRatio="xMidYMid slice" aria-hidden="true">
+      <defs>
+        <radialGradient id="kl-orb" cx="35%" cy="30%" r="75%">
+          <stop offset="0" stopColor="var(--orb-hi)" />
+          <stop offset="1" stopColor="var(--orb-lo)" />
+        </radialGradient>
+      </defs>
+      {RINGS.map((r, i) => (
+        <circle key={r} className="kl-ring" cx="1220" cy="380" r={r} strokeDasharray={i === 2 ? '2 10' : undefined} />
+      ))}
+      {ORBS.map((orb) => (
+        <circle
+          key={orb.r}
+          className="kl-orb"
+          cx={orb.cx}
+          cy={orb.cy}
+          r={orb.r}
+          fill="url(#kl-orb)"
+          style={{ animationDelay: `${orb.delay}s` }}
+        />
+      ))}
+    </svg>
+  );
+}
 
 export function LandingPage() {
   const token = useAuthStore((s) => s.token);
+  const theme = useUiStore((s) => s.theme);
+  const toggleTheme = useUiStore((s) => s.toggleTheme);
   const [trackId, setTrackId] = useState<TrackId>('investors');
   const [menuOpen, setMenuOpen] = useState(false);
   const [question, setQuestion] = useState({ name: '', phone: '', email: '', message: '' });
   const [sending, setSending] = useState(false);
   const track = tracks.find((t) => t.id === trackId)!;
   const cabinet = token ? '/dashboard' : '/register';
+  const totalPrograms = tracks.reduce((sum, t) => sum + t.pieces.length, 0);
 
   const sendQuestion = (e: FormEvent) => {
     e.preventDefault();
@@ -156,228 +223,354 @@ export function LandingPage() {
     setSending(false);
   };
 
+  const set = (key: keyof typeof question) => (e: { target: { value: string } }) =>
+    setQuestion((s) => ({ ...s, [key]: e.target.value }));
+
   return (
-    <div className="kse-official">
-      <header className="sticky top-0 z-20 border-b border-[#14171a] bg-white">
-        <div className="mx-auto flex max-w-6xl items-center justify-between gap-4 px-4 py-4 sm:px-6">
-          <BrandLogo />
-          <nav className="hidden items-center gap-6 text-[14px] lg:flex">
+    <div className="kl">
+      <header className="kl-header">
+        <div className="kl-wrap kl-header-in">
+          <BrandLogo variant={theme === 'dark' ? 'dark' : 'light'} />
+          <nav className="kl-nav" aria-label="Разделы">
             {nav.map((item) => (
-              <a key={item.href} href={item.href} className="hover:text-[#8e1d2c]">
+              <a key={item.href} href={item.href}>
                 {item.label}
               </a>
             ))}
           </nav>
-          <div className="flex items-center gap-4">
-            <a href="https://www.kse.kg/ru" className="hidden text-[14px] sm:inline">
+          <div className="kl-actions">
+            <a href="https://www.kse.kg/ru" className="kl-ghost">
               Сайт КФБ
             </a>
-            {token ? (
-              <Link to="/dashboard" className="bg-[#8e1d2c] px-4 py-2 text-[14px] font-medium text-white">
-                В кабинет
-              </Link>
-            ) : (
-              <Link to="/login" className="text-[14px]">
-                Войти
-              </Link>
-            )}
-            <button type="button" className="text-[14px] lg:hidden" onClick={() => setMenuOpen((v) => !v)}>
-              Меню
+            <button
+              type="button"
+              className="kl-icon-btn"
+              onClick={toggleTheme}
+              aria-label={theme === 'dark' ? 'Включить светлую тему' : 'Включить тёмную тему'}
+            >
+              {theme === 'dark' ? <Sun size={18} /> : <Moon size={18} />}
+            </button>
+            <Link to={token ? '/dashboard' : '/login'} className="kl-primary">
+              {token ? 'В кабинет' : 'Войти'}
+            </Link>
+            <button
+              type="button"
+              className="kl-icon-btn kl-burger"
+              aria-label="Меню"
+              aria-expanded={menuOpen}
+              onClick={() => setMenuOpen((v) => !v)}
+            >
+              <i />
+              <i />
+              <i />
             </button>
           </div>
         </div>
         {menuOpen && (
-          <div className="flex flex-col gap-2 border-t border-[#14171a] px-4 py-3 lg:hidden">
+          <nav className="kl-wrap kl-mobile-nav" aria-label="Разделы">
             {nav.map((item) => (
-              <a key={item.href} href={item.href} onClick={() => setMenuOpen(false)} className="py-1 text-sm uppercase tracking-[0.12em]">
+              <a key={item.href} href={item.href} onClick={() => setMenuOpen(false)}>
                 {item.label}
               </a>
             ))}
-          </div>
+            <a href="https://www.kse.kg/ru">Сайт КФБ</a>
+          </nav>
         )}
       </header>
 
-      <section className="mx-auto grid max-w-6xl items-start gap-12 px-4 py-14 sm:px-6 lg:grid-cols-[1.05fr_0.95fr] lg:py-20">
-        <div>
-          <h1 className="max-w-[14ch] text-[2.6rem] font-medium leading-[1.05] tracking-[-0.03em] sm:text-6xl">
-            Курсы по финансовому рынку
-          </h1>
-          <p className="mt-6 max-w-[40ch] text-lg leading-relaxed text-[#3e454c]">
-            Образовательная платформа Кыргызской фондовой биржи для частных инвесторов, студентов и специалистов рынка ценных бумаг.
-          </p>
-          <Link to={cabinet} className="mt-8 inline-block bg-[#8e1d2c] px-6 py-3 text-[15px] font-medium text-white">
-            {token ? 'Открыть кабинет' : 'Начать'}
-          </Link>
-        </div>
-        <div role="tablist" aria-label="Программы" className="border-t border-[#14171a]">
-          {tracks.map((item, index) => {
-            const on = item.id === trackId;
-            return (
-              <button
-                key={item.id}
-                type="button"
-                role="tab"
-                aria-selected={on}
-                onClick={() => setTrackId(item.id)}
-                className={`block w-full border-b border-[#14171a] px-4 py-4 text-left transition-colors ${on ? 'bg-[#14171a] text-white' : 'bg-white hover:bg-[#f4f5f6]'}`}
-              >
-                <span className="text-xs tabular-nums">{String(index + 1).padStart(2, '0')}</span>
-                <span className="mt-1 block text-lg">{item.label}</span>
-                {on && <span className="mt-2 block text-sm leading-relaxed text-white/80">{item.intro}</span>}
-              </button>
-            );
-          })}
-        </div>
-      </section>
-
-      <section id="about" className="border-y border-[#14171a]">
-        <div className="mx-auto grid max-w-6xl gap-8 px-4 py-14 sm:px-6 lg:grid-cols-[1fr_1fr]">
-          <h2 className="text-4xl leading-[0.95] sm:text-5xl">
-            Финансовая грамотность и подготовка специалистов рынка
-          </h2>
-          <div className="space-y-4 text-[17px] leading-relaxed">
+      <section className="kl-hero" aria-label="Учебный центр КФБ">
+        <span className="kl-blob kl-blob-a" />
+        <span className="kl-blob kl-blob-b" />
+        <span className="kl-blob kl-blob-c" />
+        <HeroScene />
+        <div className="kl-wrap kl-hero-in">
+          <div className="kl-hero-copy">
+            <h1>Курсы по финансовому рынку</h1>
             <p>
-              Учебный центр КФБ — образовательная инициатива ЗАО «Кыргызская фондовая биржа». С 1995 года готовим специалистов рынка ценных бумаг: брокеров, сотрудников эмитентов, частных инвесторов и студентов.
+              Образовательная платформа Кыргызской фондовой биржи для частных инвесторов, студентов и специалистов рынка ценных бумаг.
             </p>
-            <p>
-              На платформе — онлайн-курсы, вебинары и материалы для широкой аудитории. Очные программы идут по учебному плану года: рынок ценных бумаг, корпоративное управление, ESG, сукук и стратегическое управление.
-            </p>
+            <div className="kl-hero-actions">
+              <Link to={cabinet} className="kl-primary">
+                {token ? 'Открыть кабинет' : 'Начать'}
+                <Arrow />
+              </Link>
+              <a href="#courses" className="kl-link">
+                Программы
+                <Arrow />
+              </a>
+            </div>
+          </div>
+          <div className="kl-tracks" role="tablist" aria-label="Программы">
+            <small>Направления</small>
+            {tracks.map((item, index) => {
+              const on = item.id === trackId;
+              return (
+                <button
+                  key={item.id}
+                  type="button"
+                  role="tab"
+                  aria-selected={on}
+                  className="kl-track"
+                  onClick={() => setTrackId(item.id)}
+                >
+                  <span className="kl-track-n">{String(index + 1).padStart(2, '0')}</span>
+                  <span>
+                    <b>{item.label}</b>
+                    {on && <span>{item.intro}</span>}
+                  </span>
+                  <ChevronRight />
+                </button>
+              );
+            })}
+          </div>
+        </div>
+        <div className="kl-stats">
+          <div className="kl-stat">
+            <small>Готовим специалистов</small>
+            <b>
+              1995<em>с года</em>
+            </b>
+          </div>
+          <div className="kl-stat">
+            <small>Программ обучения</small>
+            <b>{totalPrograms}</b>
+          </div>
+          <div className="kl-stat">
+            <small>Форматов</small>
+            <b>{steps.length}</b>
+          </div>
+          <div className="kl-stat">
+            <small>Лицензия на подготовку</small>
+            <b>
+              2001<em>с года</em>
+            </b>
           </div>
         </div>
       </section>
 
-      <section id="courses" className="mx-auto max-w-6xl px-4 py-16 sm:px-6">
-        <h2 className="text-4xl sm:text-5xl">Программа</h2>
-        <p className="mt-3 max-w-2xl text-[17px] leading-relaxed">{track.intro}</p>
-        <ol className="mt-10 divide-y divide-[#14171a] border-y border-[#14171a]">
-          {track.pieces.map((piece) => (
-            <li key={piece.n} className="grid gap-3 py-5 sm:grid-cols-[4rem_1fr_auto] sm:items-baseline">
-              <span className="text-3xl">{piece.n}</span>
-              <div>
-                <h3 className="text-xl">{piece.title}</h3>
-                <p className="mt-1 max-w-2xl text-sm leading-relaxed text-[#3e454c]">{piece.text}</p>
-              </div>
-              <span className="text-xs uppercase tracking-[0.12em]">{piece.meta}</span>
-            </li>
-          ))}
-        </ol>
-        {track.note && <p className="mt-6 max-w-2xl text-sm leading-relaxed">{track.note}</p>}
-        <Link to={cabinet} className="mt-8 inline-block border border-[#14171a] px-5 py-3 text-sm uppercase tracking-[0.14em]">
-          {token ? 'Перейти к курсам' : 'Открыть программу'}
-        </Link>
-      </section>
+      <main className="kl-wrap kl-main">
+        <section id="about" className="kl-card">
+          <div className="kl-about">
+            <h2>Финансовая грамотность и подготовка специалистов рынка</h2>
+            <div>
+              <p>
+                Учебный центр КФБ — образовательная инициатива ЗАО «Кыргызская фондовая биржа». С 1995 года готовим специалистов рынка ценных бумаг: брокеров, сотрудников эмитентов, частных инвесторов и студентов.
+              </p>
+              <p>
+                На платформе — онлайн-курсы, вебинары и материалы для широкой аудитории. Очные программы идут по учебному плану года: рынок ценных бумаг, корпоративное управление, ESG, сукук и стратегическое управление.
+              </p>
+            </div>
+          </div>
+        </section>
 
-      <section id="formats" className="border-y border-[#14171a] bg-[#f4f5f6]">
-        <div className="mx-auto grid max-w-6xl gap-10 px-4 py-16 sm:px-6 lg:grid-cols-[0.7fr_1.3fr]">
-          <h2 className="text-4xl sm:text-5xl">Форматы обучения</h2>
-          <ol className="space-y-6">
-            {steps.map((step) => (
-              <li key={step.n} className="grid grid-cols-[auto_1fr] gap-4">
-                <span className="text-3xl text-[#8e1d2c]">{step.n}</span>
+        <section id="courses" className="kl-card">
+          <header className="kl-card-head">
+            <h2>Программа</h2>
+            <div className="kl-pills" role="tablist" aria-label="Направления">
+              {tracks.map((item) => (
+                <button
+                  key={item.id}
+                  type="button"
+                  role="tab"
+                  aria-selected={item.id === trackId}
+                  onClick={() => setTrackId(item.id)}
+                >
+                  {item.label}
+                </button>
+              ))}
+            </div>
+            <p>{track.intro}</p>
+          </header>
+          <ol className="kl-rows" key={track.id}>
+            {track.pieces.map((piece, i) => (
+              <li key={piece.n} className="kl-row" style={{ animationDelay: `${i * 0.05}s` }}>
+                <span className="kl-row-n">{piece.n}</span>
                 <div>
-                  <h3 className="text-lg">{step.title}</h3>
-                  <p className="mt-1 text-sm leading-relaxed">{step.text}</p>
+                  <h3>{piece.title}</h3>
+                  <p>{piece.text}</p>
                 </div>
+                <span className="kl-tag">{piece.meta}</span>
               </li>
             ))}
           </ol>
-        </div>
-      </section>
+          <footer className="kl-card-foot">
+            <p>{track.note ?? 'Онлайн-модули открываются в личном кабинете сразу после регистрации.'}</p>
+            <Link to={cabinet} className="kl-primary">
+              {token ? 'Перейти к курсам' : 'Открыть программу'}
+              <Arrow />
+            </Link>
+          </footer>
+        </section>
 
-      <section className="mx-auto max-w-6xl px-4 py-16 sm:px-6">
-        <h2 className="text-4xl sm:text-5xl">Почему учебный центр КФБ</h2>
-        <div className="mt-8 grid gap-8 lg:grid-cols-3">
-          {reasons.map((item, i) => (
-            <p key={item.title} className="border-t border-[#14171a] pt-4">
-              <span className="text-3xl text-[#8e1d2c]">{i + 1}</span>
-              <span className="mt-2 block text-lg">{item.title}</span>
-              <span className="mt-2 block text-sm leading-relaxed text-[#3e454c]">{item.text}</span>
-            </p>
-          ))}
+        <div className="kl-section-title">
+          <small>Как проходит обучение</small>
+          <h2>Форматы обучения</h2>
+          <p>Онлайн в кабинете, очно по учебному плану или корпоративной группой</p>
         </div>
-      </section>
 
-      <section id="faq" className="border-t border-[#14171a]">
-        <div className="mx-auto max-w-6xl px-4 py-16 sm:px-6">
-          <h2 className="text-4xl sm:text-5xl">Частые вопросы</h2>
-          <div className="mt-8 divide-y divide-[#14171a] border-y border-[#14171a]">
-            {faqs.map((item) => (
-              <details key={item.q} className="group py-4">
-                <summary className="cursor-pointer list-none font-medium marker:content-none [&::-webkit-details-marker]:hidden">
-                  <span className="flex items-center justify-between gap-4">
-                    {item.q}
-                    <span className="text-[#8e1d2c] group-open:hidden">+</span>
-                    <span className="hidden text-[#8e1d2c] group-open:inline">–</span>
+        <section id="formats" className="kl-card">
+          <div className="kl-cells" style={{ '--cols': 3 } as CSSProperties}>
+            {steps.map((step, i) => {
+              const Icon = formatIcons[i] ?? CirclePlay;
+              return (
+                <article key={step.n} className="kl-cell">
+                  <span className="kl-cell-icon">
+                    <Icon />
                   </span>
+                  <h3>{step.title}</h3>
+                  <p>{step.text}</p>
+                </article>
+              );
+            })}
+          </div>
+        </section>
+
+        <section className="kl-card">
+          <header className="kl-card-head">
+            <h2>Почему учебный центр КФБ</h2>
+          </header>
+          <div className="kl-cells" style={{ '--cols': 3 } as CSSProperties}>
+            {reasons.map((item, i) => {
+              const Icon = reasonIcons[i] ?? ShieldCheck;
+              return (
+                <article key={item.title} className="kl-cell">
+                  <span className="kl-cell-icon">
+                    <Icon />
+                  </span>
+                  <h3>{item.title}</h3>
+                  <p>{item.text}</p>
+                </article>
+              );
+            })}
+          </div>
+        </section>
+
+        <section id="faq" className="kl-card">
+          <header className="kl-card-head">
+            <h2>Частые вопросы</h2>
+          </header>
+          <div className="kl-faq">
+            {faqs.map((item) => (
+              <details key={item.q}>
+                <summary>
+                  {item.q}
+                  <ChevronDown />
                 </summary>
-                <p className="mt-3 max-w-3xl text-sm leading-relaxed">{item.a}</p>
+                <p>{item.a}</p>
               </details>
             ))}
           </div>
-        </div>
-      </section>
+        </section>
 
-      <section id="contacts" className="border-t border-[#14171a] bg-[#f4f5f6]">
-        <div className="mx-auto grid max-w-6xl gap-12 px-4 py-16 sm:px-6 lg:grid-cols-2">
-          <div>
-            <h2 className="text-4xl sm:text-5xl">По вопросам обучения</h2>
-            <ul className="mt-8 space-y-4 text-sm leading-relaxed">
+        <section id="contacts" className="kl-card">
+          <header className="kl-card-head">
+            <h2>По вопросам обучения</h2>
+          </header>
+          <div className="kl-contacts">
+            <ul className="kl-contact-list">
               <li>
-                <a className="underline decoration-[#8e1d2c] underline-offset-4" href="mailto:office@kse.kg">
-                  office@kse.kg
-                </a>
+                <Mail />
+                <span>
+                  <small>Почта</small>
+                  <a href="mailto:office@kse.kg">office@kse.kg</a>
+                </span>
               </li>
-              <li>Учебный центр: +996 772 63-79-97</li>
-              <li>Приёмная: +996 312 31-14-84</li>
-              <li>WhatsApp: +996 551 31-14-84</li>
               <li>
-                <a className="underline decoration-[#8e1d2c] underline-offset-4" href="https://www.kse.kg/ru/EduPlan" target="_blank" rel="noreferrer">
-                  Учебный план на 2026 год
-                </a>
+                <Phone />
+                <span>
+                  <small>Учебный центр</small>
+                  <a href="tel:+996772637997">+996 772 63-79-97</a>
+                </span>
+              </li>
+              <li>
+                <Phone />
+                <span>
+                  <small>Приёмная</small>
+                  <a href="tel:+996312311484">+996 312 31-14-84</a>
+                </span>
+              </li>
+              <li>
+                <MessageCircle />
+                <span>
+                  <small>WhatsApp</small>
+                  <a href="https://wa.me/996551311484" target="_blank" rel="noreferrer">
+                    +996 551 31-14-84
+                  </a>
+                </span>
+              </li>
+              <li>
+                <CalendarDays />
+                <span>
+                  <small>Расписание</small>
+                  <a href="https://www.kse.kg/ru/EduPlan" target="_blank" rel="noreferrer">
+                    Учебный план на 2026 год
+                  </a>
+                </span>
               </li>
             </ul>
+            <form className="kl-form" onSubmit={sendQuestion}>
+              <h3>Не нашли свой вопрос?</h3>
+              <p>Задайте его нам — ответим по почте или телефону.</p>
+              <label>
+                ФИО
+                <input value={question.name} onChange={set('name')} autoComplete="name" />
+              </label>
+              <label>
+                Телефон
+                <input value={question.phone} onChange={set('phone')} autoComplete="tel" />
+              </label>
+              <label className="kl-wide">
+                Email
+                <input type="email" value={question.email} onChange={set('email')} autoComplete="email" />
+              </label>
+              <label className="kl-wide">
+                Сообщение
+                <textarea value={question.message} onChange={set('message')} />
+              </label>
+              <button type="submit" disabled={sending} className="kl-primary">
+                Отправить
+                <Arrow />
+              </button>
+            </form>
           </div>
-          <form className="space-y-3" onSubmit={sendQuestion}>
-            <h3 className="text-3xl">Не нашли свой вопрос?</h3>
-            <p className="text-sm">Задайте его нам — ответим по почте или телефону.</p>
-            <label className="block text-xs uppercase tracking-[0.14em]">
-              ФИО
-              <input className={`${field} mt-1`} value={question.name} onChange={(e) => setQuestion((s) => ({ ...s, name: e.target.value }))} />
-            </label>
-            <label className="block text-xs uppercase tracking-[0.14em]">
-              Телефон
-              <input className={`${field} mt-1`} value={question.phone} onChange={(e) => setQuestion((s) => ({ ...s, phone: e.target.value }))} />
-            </label>
-            <label className="block text-xs uppercase tracking-[0.14em]">
-              Email
-              <input className={`${field} mt-1`} type="email" value={question.email} onChange={(e) => setQuestion((s) => ({ ...s, email: e.target.value }))} />
-            </label>
-            <label className="block text-xs uppercase tracking-[0.14em]">
-              Сообщение
-              <textarea className={`${field} mt-1 min-h-28`} value={question.message} onChange={(e) => setQuestion((s) => ({ ...s, message: e.target.value }))} />
-            </label>
-            <button type="submit" disabled={sending} className="bg-[#14171a] px-5 py-3 text-[15px] text-white disabled:opacity-60">
-              Отправить
-            </button>
-          </form>
-        </div>
-      </section>
+        </section>
+      </main>
 
-      <footer className="border-t border-[#14171a] px-4 py-8 sm:px-6">
-        <div className="mx-auto flex max-w-6xl flex-col justify-between gap-6 sm:flex-row">
-          <div>
-            <BrandLogo />
-            <p className="mt-3 max-w-sm text-sm">ЗАО «Кыргызская фондовая биржа». Учебный центр по подготовке специалистов рынка ценных бумаг.</p>
+      <footer className="kl-footer">
+        <div className="kl-wrap">
+          <div className="kl-banner">
+            <div>
+              <p>
+                Учебный центр КФБ готовит специалистов рынка ценных бумаг с 1995 года.
+                <small>С 2001 года — по лицензии на подготовку специалистов рынка ценных бумаг.</small>
+              </p>
+              <ul>
+                <li>
+                  <Phone />
+                  <a href="tel:+996772637997">+996 772 63-79-97</a>
+                </li>
+                <li>
+                  <Mail />
+                  <a href="mailto:office@kse.kg">office@kse.kg</a>
+                </li>
+              </ul>
+            </div>
+            <Link to={cabinet} className="kl-primary kl-banner-cta">
+              {token ? 'Открыть кабинет' : 'Начать обучение'}
+              <Arrow />
+            </Link>
           </div>
-          <div className="flex flex-col gap-2 text-sm">
-            <Link to="/login">Войти</Link>
-            <Link to="/register">Регистрация</Link>
-            <a href="https://www.kse.kg/ru/Education">О центре на kse.kg</a>
+          <div className="kl-footer-bottom">
+            <span>
+              © {new Date().getFullYear()} ЗАО «Кыргызская фондовая биржа». Материалы учебного центра — для обучения, не являются индивидуальной инвестиционной рекомендацией.
+            </span>
+            <nav aria-label="Ссылки">
+              <Link to="/login">Войти</Link>
+              <Link to="/register">Регистрация</Link>
+              <a href="https://www.kse.kg/ru/Education">О центре на kse.kg</a>
+            </nav>
           </div>
         </div>
-        <p className="mx-auto mt-8 max-w-6xl text-xs">
-          © {new Date().getFullYear()} ЗАО «Кыргызская фондовая биржа». Материалы учебного центра — для обучения, не являются индивидуальной инвестиционной рекомендацией.
-        </p>
       </footer>
     </div>
   );

@@ -6,52 +6,69 @@
   --font-sans: "Manrope", ui-sans-serif, system-ui, sans-serif;
   --font-display: "Unbounded", "Manrope", ui-sans-serif, sans-serif;
 
-  --color-brand-50: #d7eef2;
-  --color-brand-100: #c4e6eb;
-  --color-brand-200: #9fd5de;
-  --color-brand-300: #76c3ce;
-  --color-brand-400: #4eacb9;
-  --color-brand-500: #4eacb9;
-  --color-brand-600: #348a96;
-  --color-brand-700: #1a6d7a;
-  --color-brand-800: #0e3339;
-  --color-brand-900: #0e3339;
+  /* Палитра и формы — как на основном сайте КФБ (kse-kg, globals.css). */
+  --color-brand-50: #e3f4f6;
+  --color-brand-100: #cdebf0;
+  --color-brand-200: #a9dce2;
+  --color-brand-300: #7fc9d1;
+  --color-brand-400: #57b6c0;
+  --color-brand-500: #57b6c0;
+  --color-brand-600: #3f9aa4;
+  --color-brand-700: #2f7b84;
+  --color-brand-800: #1d4f55;
+  --color-brand-900: #13211e;
 
   --color-kse-gray: #9bb4b8;
-  --color-kse-muted: #5a7277;
-  --color-kse-surface: #eef6f7;
-  --color-kse-border: #d3e4e8;
-  --color-surface: #eef6f7;
-  --color-ink: #102428;
+  --color-kse-muted: #56706e;
+  --color-kse-surface: #f1f6f6;
+  --color-kse-border: #d0e3e2;
+  --color-surface: #f1f6f6;
+  --color-ink: #13211e;
   --color-panel: #ffffff;
-  --color-panel-dark: #142022;
-  --color-border-dark: rgba(158, 210, 218, 0.16);
-  --color-inverse-fg: #041314;
-  --color-ticker: #0e2a2f;
+  --color-panel-dark: #122121;
+  --color-border-dark: rgba(87, 182, 192, 0.16);
+  --color-inverse-fg: #0a1515;
+  --color-ticker: #1d4f55;
 
-  --radius-kse: 22px;
+  --radius-kse: 16px;
 }
 
 :root {
-  --brand: #4eacb9;
-  --brand-soft: #d7eef2;
-  --brand-strong: #1a6d7a;
-  --brand-deep: #0e3339;
-  --header-bg: rgba(255, 255, 255, 0.78);
-  --card-border: rgba(78, 172, 185, 0.18);
-  --shadow: 0 22px 50px rgba(16, 54, 60, 0.12);
-  --glow: 0 12px 40px rgba(78, 172, 185, 0.22);
+  --brand: #57b6c0;
+  --brand-soft: #e3f4f6;
+  --brand-strong: #3f9aa4;
+  --brand-deep: #1d4f55;
+  --ink: #13211e;
+  --ink-muted: #56706e;
+  --line: #d0e3e2;
+  --bg: #f1f6f6;
+  --surface: #ffffff;
+  --pill-track: #e3efee;
+  --header-bg: rgba(255, 255, 255, 0.92);
+  --card-border: rgba(87, 182, 192, 0.14);
+  --shadow: 0 22px 50px rgba(19, 33, 30, 0.08);
+  --glow: 0 12px 40px rgba(87, 182, 192, 0.18);
+  --up: #0d8a62;
+  --down: #c4454e;
 }
 
 .dark {
-  --brand: #6ec4cf;
-  --brand-soft: rgba(110, 196, 207, 0.14);
-  --brand-strong: #9fe0e8;
-  --brand-deep: #d7f4f7;
-  --header-bg: rgba(12, 24, 27, 0.72);
-  --card-border: rgba(110, 196, 207, 0.2);
+  --brand: #57b6c0;
+  --brand-soft: rgba(87, 182, 192, 0.14);
+  --brand-strong: #cdebf0;
+  --brand-deep: #e6f5f7;
+  --ink: #e4f4f3;
+  --ink-muted: #86aeab;
+  --line: rgba(87, 182, 192, 0.16);
+  --bg: #0a1515;
+  --surface: #122121;
+  --pill-track: rgba(255, 255, 255, 0.06);
+  --header-bg: rgba(10, 21, 21, 0.9);
+  --card-border: rgba(87, 182, 192, 0.18);
   --shadow: 0 28px 70px rgba(0, 0, 0, 0.45);
-  --glow: 0 16px 48px rgba(110, 196, 207, 0.16);
+  --glow: 0 16px 48px rgba(87, 182, 192, 0.28);
+  --up: #3dce98;
+  --down: #f0717c;
 }
 
 html {
@@ -82,31 +99,24 @@ body::before {
   inset: 0;
   z-index: -1;
   pointer-events: none;
+  /* Мягкие бирюзовые пятна — тот же язык, что у баннера на главной КФБ. */
   background:
-    linear-gradient(
-      180deg,
-      color-mix(in srgb, var(--color-surface) 18%, transparent) 0%,
-      color-mix(in srgb, var(--color-surface) 42%, transparent) 38%,
-      var(--color-surface) 76%
-    ),
-    url("./assets/mountains.jpg") center 22% / cover no-repeat;
+    radial-gradient(60% 50% at 85% 0%, rgba(87, 182, 192, 0.22), transparent 70%),
+    radial-gradient(45% 40% at 10% 10%, rgba(126, 196, 232, 0.18), transparent 70%),
+    var(--bg);
 }
 
 .dark body,
 body:where(.dark *) {
-  background: #081112;
-  color: #f3fbfc;
+  background: var(--bg);
+  color: var(--ink);
 }
 
 .dark body::before {
   background:
-    linear-gradient(
-      180deg,
-      color-mix(in srgb, #081112 38%, transparent) 0%,
-      color-mix(in srgb, #081112 68%, transparent) 46%,
-      #081112 80%
-    ),
-    url("./assets/mountains.jpg") center 22% / cover no-repeat;
+    radial-gradient(60% 50% at 85% 0%, rgba(87, 182, 192, 0.14), transparent 70%),
+    radial-gradient(45% 40% at 10% 10%, rgba(46, 120, 170, 0.14), transparent 70%),
+    var(--bg);
 }
 
 h1,

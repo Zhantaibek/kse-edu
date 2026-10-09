@@ -3,7 +3,7 @@ import type { ButtonHTMLAttributes, PropsWithChildren } from 'react';
 
 const variants = {
   primary:
-    'bg-brand-400 text-inverse-fg hover:bg-brand-300 border border-brand-400 shadow-[var(--glow)] focus-visible:ring-brand-400/40',
+    'bg-brand-400 text-white font-bold hover:bg-brand-600 border border-brand-400 hover:border-brand-600 shadow-[var(--glow)] focus-visible:ring-brand-400/40',
   secondary:
     'bg-panel/80 text-ink border border-[var(--card-border)] hover:bg-brand-50 dark:bg-panel-dark dark:text-white dark:border-border-dark dark:hover:bg-brand-800/40 focus-visible:ring-brand-400/25',
   ghost:
